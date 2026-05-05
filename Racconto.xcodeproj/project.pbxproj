@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A6517BC02FAA3DA600C77656 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BBF2FAA3DA600C77656 /* Kingfisher */; };
+		A6517BC32FAA3DE300C77656 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BC22FAA3DE300C77656 /* MarkdownUI */; };
+		A6517BC62FAA3DF700C77656 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BC52FAA3DF700C77656 /* KeychainAccess */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		A63845F62FAA3AF70058E56A /* Racconto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Racconto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +29,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6517BC02FAA3DA600C77656 /* Kingfisher in Frameworks */,
+				A6517BC32FAA3DE300C77656 /* MarkdownUI in Frameworks */,
+				A6517BC62FAA3DF700C77656 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +74,9 @@
 			);
 			name = Racconto;
 			packageProductDependencies = (
+				A6517BBF2FAA3DA600C77656 /* Kingfisher */,
+				A6517BC22FAA3DE300C77656 /* MarkdownUI */,
+				A6517BC52FAA3DF700C77656 /* KeychainAccess */,
 			);
 			productName = Racconto;
 			productReference = A63845F62FAA3AF70058E56A /* Racconto.app */;
@@ -94,6 +106,11 @@
 			);
 			mainGroup = A63845ED2FAA3AF70058E56A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A6517BBE2FAA3DA600C77656 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				A6517BC12FAA3DE300C77656 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				A6517BC42FAA3DF700C77656 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A63845F72FAA3AF70058E56A /* Products */;
 			projectDirPath = "";
@@ -258,6 +275,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진을 업로드하기 위해 사진 보관함에 접근합니다.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -288,6 +306,7 @@
 				DEVELOPMENT_TEAM = K9BX5Z3Z22;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진을 업로드하기 위해 사진 보관함에 접근합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +351,51 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A6517BBE2FAA3DA600C77656 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.9.0;
+			};
+		};
+		A6517BC12FAA3DE300C77656 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
+		A6517BC42FAA3DF700C77656 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A6517BBF2FAA3DA600C77656 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6517BBE2FAA3DA600C77656 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		A6517BC22FAA3DE300C77656 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6517BC12FAA3DE300C77656 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+		A6517BC52FAA3DF700C77656 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6517BC42FAA3DF700C77656 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A63845EE2FAA3AF70058E56A /* Project object */;
 }

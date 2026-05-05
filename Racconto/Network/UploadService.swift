@@ -1,0 +1,132 @@
+import Foundation
+import SwiftData
+import UIKit
+
+struct CFUploadURLResponse: Decodable {
+    let uploadUrl: String
+    let id: String
+}
+
+@Observable
+class UploadService {
+    static let shared = UploadService()
+
+    var pendingCount = 0
+    var isUploading = false
+    var completedCount = 0
+
+    private var isProcessing = false
+    private let api = RaccontoAPI.shared
+    private let container: ModelContainer = {
+        try! ModelContainer(for: UploadQueueItem.self)
+    }()
+    private var context: ModelContext { container.mainContext }
+
+    func enqueue(image: UIImage, exif: EXIFData, projectId: String, filename: String) {
+        let resized = ImageResizer.resize(image)
+        let localURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("upload_\(UUID().uuidString).jpg")
+        try? resized.write(to: localURL)
+
+        let item = UploadQueueItem(
+            localPath: localURL.path,
+            projectId: projectId,
+            originalFilename: filename,
+            exif: exif
+        )
+        context.insert(item)
+        try? context.save()
+        pendingCount += 1
+
+        Task { await processQueue() }
+    }
+
+    func processQueue() async {
+        guard !isProcessing else { return }
+        isProcessing = true
+        isUploading = true
+        defer { isProcessing = false; isUploading = false }
+
+        let descriptor = FetchDescriptor<UploadQueueItem>(
+            predicate: #Predicate { $0.status == "pending" },
+            sortBy: [SortDescriptor(\.createdAt)]
+        )
+        guard let items = try? context.fetch(descriptor), !items.isEmpty else {
+            pendingCount = 0
+            return
+        }
+
+        for item in items {
+            guard item.retryCount < 3 else {
+                item.status = "failed"
+                try? context.save()
+                continue
+            }
+            item.status = "uploading"
+            try? context.save()
+
+            do {
+                try await uploadItem(item)
+                item.status = "done"
+                completedCount += 1
+                try? FileManager.default.removeItem(atPath: item.localPath)
+            } catch {
+                item.retryCount += 1
+                item.status = "pending"
+            }
+            try? context.save()
+        }
+
+        let remaining = (try? context.fetch(
+            FetchDescriptor<UploadQueueItem>(predicate: #Predicate { $0.status == "pending" })
+        ))?.count ?? 0
+        pendingCount = remaining
+    }
+
+    private func uploadItem(_ item: UploadQueueItem) async throws {
+        let urlResp: CFUploadURLResponse = try await api.request("/photos/cf-upload-url")
+        guard let imageData = FileManager.default.contents(atPath: item.localPath) else {
+            throw URLError(.fileDoesNotExist)
+        }
+        let imageUrl = try await uploadToCloudflare(data: imageData, uploadUrl: urlResp.uploadUrl, imageId: urlResp.id)
+        let req = PhotoMetadataRequest(
+            projectId: item.projectId,
+            imageUrl: imageUrl,
+            originalFilename: item.originalFilename,
+            camera: item.exifCamera,
+            lens: item.exifLens,
+            iso: item.exifIso,
+            shutterSpeed: item.exifShutterSpeed,
+            aperture: item.exifAperture,
+            focalLength: item.exifFocalLength,
+            gpsLat: item.exifGpsLat,
+            gpsLng: item.exifGpsLng,
+            takenAt: item.exifTakenAt
+        )
+        let _: Photo = try await api.request("/photos/", method: "POST", body: req)
+    }
+
+    private func uploadToCloudflare(data: Data, uploadUrl: String, imageId: String) async throws -> String {
+        guard let url = URL(string: uploadUrl) else { throw URLError(.badURL) }
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        body.append("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        req.httpBody = body
+
+        let (_, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        // 업로드 URL에서 account hash 추출: https://upload.imagedelivery.net/{accountHash}/{token}
+        let parts = uploadUrl.components(separatedBy: "/")
+        let accountHash = parts.count > 3 ? parts[3] : ""
+        return "https://imagedelivery.net/\(accountHash)/\(imageId)/public"
+    }
+}
