@@ -68,6 +68,14 @@ class RaccontoAPI {
         do {
             return try JSONDecoder.racconto.decode(T.self, from: data)
         } catch {
+            #if DEBUG
+            print("=== 디코딩 오류 ===")
+            print("타입: \(T.self)")
+            print("오류: \(error)")
+            if let raw = String(data: data, encoding: .utf8) {
+                print("응답 원문: \(raw.prefix(2000))")
+            }
+            #endif
             throw APIError.decodingError(error)
         }
     }
@@ -109,7 +117,7 @@ class RaccontoAPI {
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body { req.httpBody = try JSONEncoder.racconto.encode(body) }
 
-        let (_, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await URLSession.shared.data(for: req)
 
         if let http = response as? HTTPURLResponse {
             switch http.statusCode {
@@ -121,6 +129,12 @@ class RaccontoAPI {
             case 404:
                 throw APIError.notFound
             default:
+                #if DEBUG
+                print("=== requestVoid 오류 ===")
+                print("경로: \(method) \(path)")
+                print("상태코드: \(http.statusCode)")
+                if let raw = String(data: data, encoding: .utf8) { print("응답: \(raw.prefix(500))") }
+                #endif
                 throw APIError.serverError(http.statusCode)
             }
         }
@@ -131,8 +145,8 @@ extension JSONDecoder {
     static let racconto: JSONDecoder = {
         let d = JSONDecoder()
         d.keyDecodingStrategy = .convertFromSnakeCase
-        // FastAPI는 마이크로초 포함 ISO8601 반환 (e.g. 2024-01-01T00:00:00.123456Z)
-        // Swift 기본 .iso8601은 소수점 초를 지원하지 않으므로 커스텀 처리
+        // FastAPI가 타임존 없이 마이크로초 ISO8601 반환 (e.g. 2026-05-05T22:36:47.534088)
+        // ISO8601DateFormatter는 타임존 필수이므로, 없으면 Z를 붙여 UTC로 처리
         let withFraction = ISO8601DateFormatter()
         withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let withoutFraction = ISO8601DateFormatter()
@@ -141,6 +155,10 @@ extension JSONDecoder {
             let s = try decoder.singleValueContainer().decode(String.self)
             if let date = withFraction.date(from: s) { return date }
             if let date = withoutFraction.date(from: s) { return date }
+            // 타임존 없는 경우 Z 추가 후 재시도
+            let withZ = s + "Z"
+            if let date = withFraction.date(from: withZ) { return date }
+            if let date = withoutFraction.date(from: withZ) { return date }
             throw DecodingError.dataCorruptedError(
                 in: try decoder.singleValueContainer(),
                 debugDescription: "날짜 파싱 실패: \(s)"

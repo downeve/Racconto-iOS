@@ -7,16 +7,16 @@ struct PortfolioProject: Codable, Identifiable {
     var coverImageUrl: String?
     var location: String?
     var chapters: [PortfolioChapter]
-    var photos: [PortfolioPhoto]
-    var extraPhotos: [PortfolioPhoto]
+    var photos: [PortfolioPhoto]?
+    var extraPhotos: [PortfolioPhoto]?
 }
 
 struct PortfolioChapter: Codable, Identifiable {
     let id: String
     var title: String
     var description: String?
-    var items: [PortfolioChapterItem]
-    var subChapters: [PortfolioChapter]
+    var items: [PortfolioChapterItem]?
+    var subChapters: [PortfolioChapter]?
 }
 
 struct PortfolioPhoto: Codable, Identifiable {

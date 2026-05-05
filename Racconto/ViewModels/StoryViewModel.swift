@@ -71,23 +71,31 @@ class StoryViewModel {
     }
 
     func moveChapterUp(_ chapter: Chapter) async {
-        let siblings = chapters
+        var siblings = chapters
             .filter { $0.parentId == chapter.parentId }
             .sorted { $0.orderNum < $1.orderNum }
         guard let idx = siblings.firstIndex(where: { $0.id == chapter.id }), idx > 0 else { return }
-        var ids = siblings.map(\.id)
-        ids.swapAt(idx, idx - 1)
-        await reorderChapters(ids: ids, parentId: chapter.parentId)
+        siblings.swapAt(idx, idx - 1)
+        applyLocalChapterOrder(siblings)
+        await reorderChapters(ids: siblings.map(\.id), parentId: chapter.parentId)
     }
 
     func moveChapterDown(_ chapter: Chapter) async {
-        let siblings = chapters
+        var siblings = chapters
             .filter { $0.parentId == chapter.parentId }
             .sorted { $0.orderNum < $1.orderNum }
         guard let idx = siblings.firstIndex(where: { $0.id == chapter.id }), idx < siblings.count - 1 else { return }
-        var ids = siblings.map(\.id)
-        ids.swapAt(idx, idx + 1)
-        await reorderChapters(ids: ids, parentId: chapter.parentId)
+        siblings.swapAt(idx, idx + 1)
+        applyLocalChapterOrder(siblings)
+        await reorderChapters(ids: siblings.map(\.id), parentId: chapter.parentId)
+    }
+
+    private func applyLocalChapterOrder(_ siblings: [Chapter]) {
+        for (i, ch) in siblings.enumerated() {
+            if let idx = chapters.firstIndex(where: { $0.id == ch.id }) {
+                chapters[idx].orderNum = i
+            }
+        }
     }
 
     private func reorderChapters(ids: [String], parentId: String?) async {
@@ -161,6 +169,7 @@ class StoryViewModel {
         var currentBlocks = blocks(for: chapterId)
         guard let idx = currentBlocks.firstIndex(where: { $0.id == blockId }), idx > 0 else { return }
         currentBlocks.swapAt(idx, idx - 1)
+        applyLocalBlockOrder(chapterId: chapterId, blocks: currentBlocks)
         await syncBlocks(chapterId: chapterId, blocks: currentBlocks)
     }
 
@@ -168,7 +177,22 @@ class StoryViewModel {
         var currentBlocks = blocks(for: chapterId)
         guard let idx = currentBlocks.firstIndex(where: { $0.id == blockId }), idx < currentBlocks.count - 1 else { return }
         currentBlocks.swapAt(idx, idx + 1)
+        applyLocalBlockOrder(chapterId: chapterId, blocks: currentBlocks)
         await syncBlocks(chapterId: chapterId, blocks: currentBlocks)
+    }
+
+    private func applyLocalBlockOrder(chapterId: String, blocks: [Block]) {
+        var updated: [ChapterItem] = []
+        var n = 0
+        for block in blocks {
+            for item in block.items {
+                var copy = item
+                copy.orderNum = n
+                n += 1
+                updated.append(copy)
+            }
+        }
+        itemsByChapter[chapterId] = updated
     }
 
     private func syncBlocks(chapterId: String, blocks: [Block]) async {

@@ -15,8 +15,8 @@ struct StoryEditorView: View {
                         ContentUnavailableView("챕터가 없습니다", systemImage: "text.book.closed")
                             .padding(.top, 60)
                     } else {
-                        ForEach(viewModel.chapterTree, id: \.parent.id) { node in
-                            ChapterSectionView(node: node, viewModel: viewModel, project: project)
+                        ForEach(Array(viewModel.chapterTree.enumerated()), id: \.element.parent.id) { topIdx, node in
+                            ChapterSectionView(node: node, topIndex: topIdx + 1, viewModel: viewModel, project: project)
                         }
                     }
                 }
@@ -69,6 +69,7 @@ struct StoryEditorView: View {
 
 struct ChapterSectionView: View {
     let node: ChapterNode
+    let topIndex: Int
     var viewModel: StoryViewModel
     let project: Project
     @State private var editingTitle = false
@@ -79,15 +80,15 @@ struct ChapterSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 최상위 챕터 헤더
-            chapterHeader(chapter: node.parent, isTop: true)
+            chapterHeader(chapter: node.parent, isTop: true, label: "\(topIndex)")
 
             // 최상위 챕터 블록
             blockList(for: node.parent)
 
             // 서브챕터
-            ForEach(node.subs) { sub in
+            ForEach(Array(node.subs.enumerated()), id: \.element.id) { subIdx, sub in
                 VStack(alignment: .leading, spacing: 0) {
-                    chapterHeader(chapter: sub, isTop: false)
+                    chapterHeader(chapter: sub, isTop: false, label: "\(topIndex).\(subIdx + 1)")
                     blockList(for: sub)
                 }
                 .padding(.leading, 16)
@@ -114,12 +115,17 @@ struct ChapterSectionView: View {
     }
 
     @ViewBuilder
-    private func chapterHeader(chapter: Chapter, isTop: Bool) -> some View {
+    private func chapterHeader(chapter: Chapter, isTop: Bool, label: String) -> some View {
         HStack(spacing: 8) {
-            Text(chapter.title)
-                .font(isTop ? .headline : .subheadline)
-                .fontWeight(isTop ? .semibold : .medium)
-                .foregroundStyle(isTop ? .primary : .secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("챕터 \(label)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Text(chapter.title)
+                    .font(isTop ? .headline : .subheadline)
+                    .fontWeight(isTop ? .semibold : .medium)
+                    .foregroundStyle(isTop ? .primary : .secondary)
+            }
 
             Spacer()
 

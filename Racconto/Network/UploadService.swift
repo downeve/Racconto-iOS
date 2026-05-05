@@ -106,6 +106,26 @@ class UploadService {
         let _: Photo = try await api.request("/photos/", method: "POST", body: req)
     }
 
+    func retryFailed() async {
+        let descriptor = FetchDescriptor<UploadQueueItem>(
+            predicate: #Predicate { $0.status == "failed" }
+        )
+        guard let failed = try? context.fetch(descriptor), !failed.isEmpty else { return }
+        for item in failed {
+            item.status = "pending"
+            item.retryCount = 0
+        }
+        try? context.save()
+        await processQueue()
+    }
+
+    var hasFailedItems: Bool {
+        let descriptor = FetchDescriptor<UploadQueueItem>(
+            predicate: #Predicate { $0.status == "failed" }
+        )
+        return ((try? context.fetch(descriptor))?.count ?? 0) > 0
+    }
+
     private func uploadToCloudflare(data: Data, uploadUrl: String, imageId: String) async throws -> String {
         guard let url = URL(string: uploadUrl) else { throw URLError(.badURL) }
         let boundary = "Boundary-\(UUID().uuidString)"

@@ -11,23 +11,18 @@ struct iPhoneRootView: View {
                     ProjectListView(viewModel: listVM, selectedProject: nil)
                 }
             }
-            Tab("설정", systemImage: "gearshape") {
+            Tab("포트폴리오", systemImage: "person.crop.rectangle.stack") {
+                PublicPortfolioView()
+            }
+            Tab("휴지통", systemImage: "trash") {
                 NavigationStack {
-                    SettingsStubView(authViewModel: authViewModel)
-                        .navigationTitle("설정")
+                    TrashView()
                 }
             }
-        }
-    }
-}
-
-struct SettingsStubView: View {
-    var authViewModel: AuthViewModel
-
-    var body: some View {
-        List {
-            Button("로그아웃", role: .destructive) {
-                authViewModel.logout()
+            Tab("설정", systemImage: "gearshape") {
+                NavigationStack {
+                    SettingsView(authViewModel: authViewModel)
+                }
             }
         }
     }

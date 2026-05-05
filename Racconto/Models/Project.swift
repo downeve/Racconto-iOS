@@ -8,7 +8,7 @@ struct Project: Codable, Identifiable {
     var coverImageUrl: String?
     var location: String?
     var isPublic: String          // "true" | "false" — 백엔드가 String 반환
-    var orderNum: Int
+    var orderNum: Int?
     var updatedAt: Date
     var createdAt: Date
 

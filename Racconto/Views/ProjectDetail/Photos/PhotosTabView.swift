@@ -45,10 +45,11 @@ struct PhotosTabView: View {
                     )
                 }
 
-                if UploadService.shared.pendingCount > 0 || UploadService.shared.isUploading {
+                if UploadService.shared.pendingCount > 0 || UploadService.shared.isUploading || UploadService.shared.hasFailedItems {
                     UploadProgressView(
                         pendingCount: UploadService.shared.pendingCount,
-                        isUploading: UploadService.shared.isUploading
+                        isUploading: UploadService.shared.isUploading,
+                        hasFailed: UploadService.shared.hasFailedItems
                     )
                 }
 
