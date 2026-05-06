@@ -24,7 +24,7 @@ struct RootView: View {
                 iPhoneRootView()
             }
         } else {
-            LoginView(authViewModel: authViewModel)
+            LandingView(authViewModel: authViewModel)
         }
     }
 }
