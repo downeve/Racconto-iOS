@@ -5,6 +5,8 @@ struct BlockCard: View {
     let chapterId: String
     var viewModel: StoryViewModel
     @State private var showEditor = false
+    @State private var showSideBySideSetup = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -53,6 +55,9 @@ struct BlockCard: View {
         .sheet(isPresented: $showEditor) {
             editorSheet
         }
+        .sheet(isPresented: $showSideBySideSetup) {
+            SideBySideSetupSheet(block: block, chapterId: chapterId, viewModel: viewModel)
+        }
     }
 
     // MARK: - Sub-views
@@ -69,7 +74,11 @@ struct BlockCard: View {
                 Button {
                     Task { await viewModel.changeBlockLayout(chapterId: chapterId, blockId: block.id, layout: layout) }
                 } label: {
-                    Label(layoutLabel(layout), systemImage: block.blockLayout == layout ? "checkmark" : "")
+                    if block.blockLayout == layout {
+                        Label(layoutLabel(layout), systemImage: "checkmark")
+                    } else {
+                        Text(layoutLabel(layout))
+                    }
                 }
             }
         } label: {
@@ -102,6 +111,30 @@ struct BlockCard: View {
 
     private var blockMenu: some View {
         Menu {
+            if sizeClass == .regular {
+                if block.isSideBySide {
+                    if let item = block.textItem {
+                        Button {
+                            Task { await viewModel.cancelSideBySide(chapterId: chapterId, textItemId: item.id) }
+                        } label: {
+                            Label("나란히 배치 해제", systemImage: "rectangle.split.2x1.slash")
+                        }
+                        Divider()
+                    }
+                } else {
+                    let hasCounterpart = block.photoItems.isEmpty
+                        ? !viewModel.blocks(for: chapterId).filter { !$0.isSideBySide && !$0.photoItems.isEmpty }.isEmpty
+                        : !viewModel.blocks(for: chapterId).filter { !$0.isSideBySide && $0.textItem != nil }.isEmpty
+                    if hasCounterpart {
+                        Button {
+                            showSideBySideSetup = true
+                        } label: {
+                            Label("나란히 배치", systemImage: "rectangle.split.2x1")
+                        }
+                        Divider()
+                    }
+                }
+            }
             if let item = block.textItem {
                 Button(role: .destructive) {
                     Task { await viewModel.deleteItem(chapterId: chapterId, itemId: item.id) }

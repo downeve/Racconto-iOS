@@ -204,6 +204,24 @@ class StoryViewModel {
     }
 
     // syncBlocks에서 items 배열을 만들 때 blockId 포함하는 헬퍼
+    func setSideBySide(chapterId: String, textItemId: String, photoBlockId: String, position: String) async {
+        struct Body: Encodable { let textItemId, photoBlockId, position: String }
+        do {
+            try await api.requestVoid("/chapters/\(chapterId)/side-by-side", method: "PUT",
+                body: Body(textItemId: textItemId, photoBlockId: photoBlockId, position: position))
+            await reloadAllItems()
+        } catch {}
+    }
+
+    func cancelSideBySide(chapterId: String, textItemId: String) async {
+        struct Body: Encodable { let textItemId: String }
+        do {
+            try await api.requestVoid("/chapters/\(chapterId)/side-by-side/cancel", method: "PUT",
+                body: Body(textItemId: textItemId))
+            await reloadAllItems()
+        } catch {}
+    }
+
     private func makeSyncItems(from blocks: [Block]) -> [ItemSyncData] {
         var result: [ItemSyncData] = []
         var n = 0
