@@ -1,17 +1,27 @@
 import SwiftUI
 import MarkdownUI
+import Kingfisher
 
 struct StoryPreviewView: View {
     var viewModel: StoryViewModel
     let projectId: String
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var lightboxData: LightboxData? = nil
+    @State private var contentWidth: CGFloat = 0
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 32) {
-                ForEach(viewModel.chapterTree, id: \.parent.id) { node in
-                    chapterSection(node)
+                // 컨테이너 폭 측정용 (높이 0, 레이아웃 영향 없음)
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: 0)
+                    .background(GeometryReader { geo in
+                        Color.clear.onAppear { contentWidth = geo.size.width }
+                            .onChange(of: geo.size.width) { _, w in contentWidth = w }
+                    })
+
+                ForEach(Array(viewModel.chapterTree.enumerated()), id: \.element.parent.id) { idx, node in
+                    chapterSection(node, chapterIndex: idx + 1)
                 }
             }
             .padding()
@@ -23,10 +33,12 @@ struct StoryPreviewView: View {
     }
 
     @ViewBuilder
-    private func chapterSection(_ node: ChapterNode) -> some View {
+    private func chapterSection(_ node: ChapterNode, chapterIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 20) {
-            // 최상위 챕터 헤더
             VStack(alignment: .leading, spacing: 4) {
+                Text("챕터 \(chapterIndex)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text(node.parent.title)
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -37,15 +49,16 @@ struct StoryPreviewView: View {
                 }
             }
 
-            // 최상위 챕터 블록
             ForEach(viewModel.blocks(for: node.parent.id)) { block in
                 blockView(block, allPhotosInChapter: photosIn(chapterId: node.parent.id))
             }
 
-            // 서브챕터
-            ForEach(node.subs) { sub in
+            ForEach(Array(node.subs.enumerated()), id: \.element.id) { subIdx, sub in
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
+                        Text("챕터 \(chapterIndex).\(subIdx + 1)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         Text(sub.title)
                             .font(.title3)
                             .fontWeight(.medium)
@@ -82,40 +95,37 @@ struct StoryPreviewView: View {
 
     @ViewBuilder
     private func photoBlockView(_ block: Block, allPhotos: [Photo]) -> some View {
-        let cols: Int = {
-            switch block.blockLayout {
-            case .grid: return sizeClass == .regular ? 4 : 3
-            case .wide: return 2
-            case .single: return 1
+        let photos = block.photoItems
+        if block.blockLayout == .single {
+            VStack(spacing: 4) {
+                ForEach(photos) { item in
+                    CachedImage(url: item.imageUrl, variant: .public, contentMode: .fit)
+                        .cornerRadius(2)
+                        .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
+                }
             }
-        }()
-        let gridCols = Array(repeating: GridItem(.flexible(), spacing: 4), count: cols)
-
-        LazyVGrid(columns: gridCols, spacing: 4) {
-            ForEach(block.photoItems) { item in
-                CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
-                    .aspectRatio(1, contentMode: .fit)
-                    .clipped()
-                    .cornerRadius(2)
-                    .onTapGesture {
-                        openLightbox(for: item, allPhotos: allPhotos)
-                    }
-            }
+        } else {
+            let cols = block.blockLayout == .wide ? 2 : (sizeClass == .regular ? 4 : 3)
+            JustifiedPhotoGrid(
+                items: photos,
+                cols: cols,
+                gap: 4,
+                containerWidth: contentWidth,
+                onTap: { openLightbox(for: $0, allPhotos: allPhotos) }
+            )
         }
     }
 
     @ViewBuilder
     private func sideBySideView(_ block: Block, allPhotos: [Photo]) -> some View {
         let isTextLeft = block.blockType == "side-left"
-        Group {
-            if sizeClass == .regular {
-                HStack(alignment: .top, spacing: 16) {
-                    sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
-                }
+        if sizeClass == .regular {
+            HStack(alignment: .top, spacing: 16) {
+                sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
             }
         }
     }
@@ -162,8 +172,62 @@ struct StoryPreviewView: View {
     }
 
     private func openLightbox(for item: ChapterItem, allPhotos: [Photo]) {
-        let photos = allPhotos
         let idx = allPhotos.firstIndex(where: { $0.id == (item.photoId ?? item.id) }) ?? 0
-        lightboxData = LightboxData(photos: photos, index: idx)
+        lightboxData = LightboxData(photos: allPhotos, index: idx)
+    }
+}
+
+// MARK: - Justified Photo Grid
+
+private struct JustifiedPhotoGrid: View {
+    let items: [ChapterItem]
+    let cols: Int
+    let gap: CGFloat
+    let containerWidth: CGFloat
+    let onTap: (ChapterItem) -> Void
+
+    @State private var ratios: [String: CGFloat] = [:]
+
+    private var rows: [[ChapterItem]] {
+        guard !items.isEmpty else { return [] }
+        return stride(from: 0, to: items.count, by: cols).map {
+            Array(items[$0..<min($0 + cols, items.count)])
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: gap) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                rowView(row)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func rowView(_ row: [ChapterItem]) -> some View {
+        let rowRatios = row.map { ratios[$0.id] ?? 1.5 }
+        let totalGap = gap * CGFloat(max(0, row.count - 1))
+        let sumRatios = rowRatios.reduce(0, +)
+        let rowHeight = containerWidth > 0 ? (containerWidth - totalGap) / sumRatios : 160
+
+        HStack(spacing: gap) {
+            ForEach(Array(zip(row, rowRatios)), id: \.0.id) { item, ratio in
+                KFImage(cfUrl(item.imageUrl, variant: .grid))
+                    .placeholder { Color(.secondarySystemBackground) }
+                    .resizable()
+                    .onSuccess { result in
+                        let size = result.image.size
+                        if size.height > 0 {
+                            ratios[item.id] = size.width / size.height
+                        }
+                    }
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: rowHeight * ratio, height: rowHeight)
+                    .clipped()
+                    .cornerRadius(2)
+                    .onTapGesture { onTap(item) }
+            }
+        }
+        .frame(height: rowHeight)
     }
 }

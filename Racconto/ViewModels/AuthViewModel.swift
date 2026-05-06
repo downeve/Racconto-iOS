@@ -5,11 +5,20 @@ class AuthViewModel {
     var isAuthenticated: Bool = false
     var isLoading: Bool = false
     var errorMessage: String?
+    var currentUsername: String? = nil
 
     private let api = RaccontoAPI.shared
 
     init() {
         isAuthenticated = api.isAuthenticated
+    }
+
+    func fetchMe() async {
+        guard isAuthenticated else { return }
+        do {
+            let me: MeResponse = try await api.request("/auth/me")
+            currentUsername = me.username
+        } catch {}
     }
 
     func login(email: String, password: String) async {

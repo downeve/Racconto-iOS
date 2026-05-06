@@ -1,28 +1,42 @@
 import SwiftUI
 
 struct PublicPortfolioView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var viewModel = PortfolioViewModel()
     @State private var usernameInput = ""
     @State private var submittedUsername = ""
+    @State private var meLoaded = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        NavigationStack {
-            if let portfolio = viewModel.portfolio, !submittedUsername.isEmpty {
-                portfolioContent(portfolio)
-                    .navigationTitle(submittedUsername)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("다른 사용자") {
-                                viewModel.portfolio = nil
-                                submittedUsername = ""
-                            }
+        if let portfolio = viewModel.portfolio, !submittedUsername.isEmpty {
+            portfolioContent(portfolio)
+                .navigationTitle(submittedUsername)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("다른 사용자") {
+                            viewModel.portfolio = nil
+                            submittedUsername = ""
                         }
                     }
-            } else {
-                searchForm
-                    .navigationTitle("포트폴리오")
-            }
+                }
+        } else if viewModel.isLoading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle("포트폴리오")
+        } else {
+            searchForm
+                .navigationTitle("포트폴리오")
+                .task {
+                    guard !meLoaded else { return }
+                    meLoaded = true
+                    await authViewModel.fetchMe()
+                    if let username = authViewModel.currentUsername, !username.isEmpty {
+                        submittedUsername = username
+                        await viewModel.load(username: username)
+                    }
+                }
         }
     }
 
@@ -32,10 +46,21 @@ struct PublicPortfolioView: View {
             Image(systemName: "person.crop.rectangle.stack")
                 .font(.system(size: 56))
                 .foregroundStyle(.secondary)
-            Text("사용자 이름을 입력하면\n공개 포트폴리오를 볼 수 있습니다.")
-                .multilineTextAlignment(.center)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if authViewModel.isAuthenticated && authViewModel.currentUsername == nil {
+                Text("포트폴리오를 보려면\n먼저 유저네임을 설정해 주세요.")
+                    .multilineTextAlignment(.center)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                NavigationLink("설정에서 유저네임 설정") {
+                    SettingsView(authViewModel: authViewModel)
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Text("사용자 이름을 입력하면\n공개 포트폴리오를 볼 수 있습니다.")
+                    .multilineTextAlignment(.center)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             HStack(spacing: 12) {
                 TextField("사용자 이름", text: $usernameInput)
                     .textInputAutocapitalization(.never)
@@ -49,9 +74,6 @@ struct PublicPortfolioView: View {
                 .disabled(usernameInput.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 32)
-            if viewModel.isLoading {
-                ProgressView()
-            }
             if let err = viewModel.errorMessage {
                 Text(err)
                     .font(.caption)
@@ -64,21 +86,39 @@ struct PublicPortfolioView: View {
 
     @ViewBuilder
     private func portfolioContent(_ portfolio: PortfolioResponse) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 32) {
-                ForEach(portfolio.projects) { project in
-                    NavigationLink {
-                        PortfolioProjectDetailView(project: project, theme: portfolio.theme)
-                    } label: {
-                        portfolioProjectCard(project)
+        GeometryReader { geo in
+            let cols = sizeClass == .regular ? (geo.size.width > 800 ? 3 : 2) : 1
+            let gridCols = Array(repeating: GridItem(.flexible(), spacing: 16), count: cols)
+            ScrollView {
+                if cols == 1 {
+                    LazyVStack(alignment: .leading, spacing: 32) {
+                        ForEach(portfolio.projects) { project in
+                            NavigationLink {
+                                PortfolioProjectDetailView(project: project, theme: portfolio.theme)
+                            } label: {
+                                portfolioProjectCard(project)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding()
+                } else {
+                    LazyVGrid(columns: gridCols, spacing: 24) {
+                        ForEach(portfolio.projects) { project in
+                            NavigationLink {
+                                PortfolioProjectDetailView(project: project, theme: portfolio.theme)
+                            } label: {
+                                portfolioProjectCard(project)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding()
                 }
             }
-            .padding()
+            .background(themeBackground(portfolio.theme))
+            .foregroundStyle(themeForeground(portfolio.theme))
         }
-        .background(themeBackground(portfolio.theme))
-        .foregroundStyle(themeForeground(portfolio.theme))
     }
 
     @ViewBuilder
@@ -125,8 +165,8 @@ struct PortfolioProjectDetailView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 32) {
-                ForEach(project.chapters) { chapter in
-                    chapterSection(chapter)
+                ForEach(Array(project.chapters.enumerated()), id: \.element.id) { idx, chapter in
+                    chapterSection(chapter, chapterIndex: idx + 1)
                 }
             }
             .padding()
@@ -138,9 +178,12 @@ struct PortfolioProjectDetailView: View {
     }
 
     @ViewBuilder
-    private func chapterSection(_ chapter: PortfolioChapter) -> some View {
+    private func chapterSection(_ chapter: PortfolioChapter, chapterIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
+                Text("챕터 \(chapterIndex)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text(chapter.title)
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -151,9 +194,12 @@ struct PortfolioProjectDetailView: View {
                 }
             }
             PortfolioBlockView(items: chapter.items ?? [])
-            ForEach(chapter.subChapters ?? []) { sub in
+            ForEach(Array((chapter.subChapters ?? []).enumerated()), id: \.element.id) { subIdx, sub in
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
+                        Text("챕터 \(chapterIndex).\(subIdx + 1)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         Text(sub.title)
                             .font(.title3)
                             .fontWeight(.medium)

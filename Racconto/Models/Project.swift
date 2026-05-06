@@ -9,6 +9,7 @@ struct Project: Codable, Identifiable {
     var location: String?
     var isPublic: String          // "true" | "false" — 백엔드가 String 반환
     var orderNum: Int?
+    var deletedAt: Date?
     var updatedAt: Date
     var createdAt: Date
 

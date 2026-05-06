@@ -15,3 +15,10 @@ struct RegisterRequest: Encodable {
     let password: String
     let name: String?
 }
+
+struct MeResponse: Decodable {
+    let id: String
+    let email: String
+    let username: String?
+    let name: String?
+}

@@ -12,7 +12,9 @@ struct iPhoneRootView: View {
                 }
             }
             Tab("포트폴리오", systemImage: "person.crop.rectangle.stack") {
-                PublicPortfolioView()
+                NavigationStack {
+                    PublicPortfolioView()
+                }
             }
             Tab("휴지통", systemImage: "trash") {
                 NavigationStack {
