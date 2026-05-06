@@ -50,13 +50,14 @@ struct BlockReorderRequest: Encodable {
 }
 
 struct BlockLayoutRequest: Encodable {
-    var layout: String
+    var blockLayout: String
 }
 
 struct ItemSyncData: Encodable {
     var id: String
     var orderNum: Int
     var orderInBlock: Int
+    var blockId: String?
 }
 
 struct BulkSyncRequest: Encodable {

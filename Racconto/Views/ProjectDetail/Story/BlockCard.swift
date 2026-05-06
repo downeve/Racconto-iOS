@@ -31,22 +31,25 @@ struct BlockCard: View {
                 }
             }
 
-            // Content preview
-            if block.isSideBySide {
-                sideBySidePreview
-            } else if block.photoItems.isEmpty, let text = block.textItem?.textContent {
-                Text(text.isEmpty ? "빈 텍스트 블록" : text)
-                    .lineLimit(2)
-                    .font(.callout)
-                    .foregroundStyle(text.isEmpty ? .tertiary : .secondary)
-            } else {
-                photoPreview
+            // Content preview — 이 영역 탭 시 편집 화면 열기
+            Group {
+                if block.isSideBySide {
+                    sideBySidePreview
+                } else if block.photoItems.isEmpty, let text = block.textItem?.textContent {
+                    Text(text.isEmpty ? "빈 텍스트 블록" : text)
+                        .lineLimit(2)
+                        .font(.callout)
+                        .foregroundStyle(text.isEmpty ? .tertiary : .secondary)
+                } else {
+                    photoPreview
+                }
             }
+            .contentShape(Rectangle())
+            .onTapGesture { showEditor = true }
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(8)
-        .onTapGesture { showEditor = true }
         .sheet(isPresented: $showEditor) {
             editorSheet
         }

@@ -73,7 +73,7 @@ class PhotosViewModel {
         for photoId in photoIds {
             do {
                 let req = PhotoItemAddRequest(photoId: photoId)
-                try await api.requestVoid("/chapters/\(chapterId)/items/photo", method: "POST", body: req)
+                try await api.requestVoid("/chapters/\(chapterId)/photos", method: "POST", body: req)
             } catch {}
         }
     }

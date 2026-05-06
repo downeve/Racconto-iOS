@@ -39,6 +39,14 @@ class StoryViewModel {
         } catch {}
     }
 
+    func reloadAllItems() async {
+        await withTaskGroup(of: Void.self) { group in
+            for chapter in chapters {
+                group.addTask { await self.loadItems(for: chapter.id) }
+            }
+        }
+    }
+
     // MARK: - Chapter CRUD
 
     func createChapter(title: String, parentId: String? = nil) async {
@@ -101,7 +109,7 @@ class StoryViewModel {
     private func reorderChapters(ids: [String], parentId: String?) async {
         do {
             let req = ChapterReorderRequest(chapterIds: ids, parentId: parentId)
-            try await api.requestVoid("/chapters/reorder", method: "POST", body: req)
+            try await api.requestVoid("/chapters/reorder", method: "PUT", body: req)
             if !projectId.isEmpty { await load(projectId: projectId) }
         } catch {}
     }
@@ -111,7 +119,7 @@ class StoryViewModel {
     func addTextItem(chapterId: String, content: String) async {
         do {
             let req = TextItemAddRequest(textContent: content)
-            let item: ChapterItem = try await api.request("/chapters/\(chapterId)/items/text", method: "POST", body: req)
+            let item: ChapterItem = try await api.request("/chapters/\(chapterId)/texts", method: "POST", body: req)
             itemsByChapter[chapterId, default: []].append(item)
         } catch let err as APIError {
             errorMessage = err.errorDescription
@@ -121,7 +129,7 @@ class StoryViewModel {
     func updateTextItem(chapterId: String, itemId: String, content: String) async {
         do {
             let req = TextItemUpdateRequest(textContent: content)
-            let updated: ChapterItem = try await api.request("/chapters/\(chapterId)/items/\(itemId)/text", method: "PUT", body: req)
+            let updated: ChapterItem = try await api.request("/chapters/\(chapterId)/texts/\(itemId)", method: "PUT", body: req)
             if var items = itemsByChapter[chapterId], let idx = items.firstIndex(where: { $0.id == itemId }) {
                 items[idx] = updated
                 itemsByChapter[chapterId] = items
@@ -154,7 +162,7 @@ class StoryViewModel {
 
     func changeBlockLayout(chapterId: String, blockId: String, layout: ChapterItem.BlockLayout) async {
         do {
-            let req = BlockLayoutRequest(layout: layout.rawValue)
+            let req = BlockLayoutRequest(blockLayout: layout.rawValue)
             try await api.requestVoid("/chapters/\(chapterId)/blocks/\(blockId)/layout", method: "PUT", body: req)
             if var items = itemsByChapter[chapterId] {
                 for i in items.indices where items[i].blockId == blockId {
@@ -195,15 +203,21 @@ class StoryViewModel {
         itemsByChapter[chapterId] = updated
     }
 
-    private func syncBlocks(chapterId: String, blocks: [Block]) async {
-        var syncItems: [ItemSyncData] = []
-        var orderNum = 0
+    // syncBlocks에서 items 배열을 만들 때 blockId 포함하는 헬퍼
+    private func makeSyncItems(from blocks: [Block]) -> [ItemSyncData] {
+        var result: [ItemSyncData] = []
+        var n = 0
         for block in blocks {
             for item in block.items {
-                syncItems.append(ItemSyncData(id: item.id, orderNum: orderNum, orderInBlock: item.orderInBlock))
-                orderNum += 1
+                result.append(ItemSyncData(id: item.id, orderNum: n, orderInBlock: item.orderInBlock, blockId: item.blockId))
+                n += 1
             }
         }
+        return result
+    }
+
+    private func syncBlocks(chapterId: String, blocks: [Block]) async {
+        let syncItems = makeSyncItems(from: blocks)
         do {
             try await api.requestVoid("/chapters/\(chapterId)/items/bulk-sync", method: "PUT", body: BulkSyncRequest(items: syncItems))
             await loadItems(for: chapterId)

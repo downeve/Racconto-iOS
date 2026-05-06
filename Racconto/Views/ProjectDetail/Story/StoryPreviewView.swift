@@ -94,7 +94,7 @@ struct StoryPreviewView: View {
         LazyVGrid(columns: gridCols, spacing: 4) {
             ForEach(block.photoItems) { item in
                 CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
-                    .aspectRatio(1, contentMode: .fill)
+                    .aspectRatio(1, contentMode: .fit)
                     .clipped()
                     .cornerRadius(2)
                     .onTapGesture {

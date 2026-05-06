@@ -44,7 +44,8 @@ struct ChapterPickerSheet: View {
             .task {
                 isLoading = true
                 if let ch: [Chapter] = try? await api.request("/chapters/?project_id=\(projectId)") {
-                    chapters = ch.sorted { $0.orderNum < $1.orderNum }
+                    let tree = ChapterTreeBuilder.buildTree(ch)
+                    chapters = tree.flatMap { node in [node.parent] + node.subs }
                 }
                 isLoading = false
             }

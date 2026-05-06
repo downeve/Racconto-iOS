@@ -39,7 +39,9 @@ struct ProjectDetailView: View {
         .onChange(of: selectedTab) { _, tab in
             Task {
                 switch tab {
-                case 1: if storyVM.chapters.isEmpty { await storyVM.load(projectId: project.id) }
+                case 1:
+                    if storyVM.chapters.isEmpty { await storyVM.load(projectId: project.id) }
+                    else { await storyVM.reloadAllItems() }
                 case 2: if notesVM.notes.isEmpty { await notesVM.load(projectId: project.id) }
                 default: break
                 }

@@ -48,6 +48,7 @@ struct iPadRootView: View {
             if selectedSidebar == .projects {
                 if let project = selectedProject {
                     ProjectDetailView(project: project)
+                        .id(project.id)
                 } else {
                     ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
                 }
