@@ -3,73 +3,144 @@ import SwiftUI
 struct NotesTabView: View {
     let project: Project
     var viewModel: NotesViewModel
-    @State private var showNewNote = false
+    @State private var isComposing = false
     @State private var newContent = ""
+    @FocusState private var composerFocused: Bool
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            Group {
-                if viewModel.isLoading && viewModel.notes.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.notes.isEmpty {
-                    ContentUnavailableView("노트가 없습니다", systemImage: "note.text")
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
-                            if !viewModel.pinnedNotes.isEmpty {
-                                Section {
-                                    ForEach(viewModel.pinnedNotes) { note in
-                                        noteRow(note)
-                                    }
-                                } header: {
-                                    Text("고정됨")
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(.secondary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 2)
-                                }
-                            }
-                            if !viewModel.unpinnedNotes.isEmpty {
-                                ForEach(viewModel.unpinnedNotes) { note in
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    // 인라인 입력창
+                    if isComposing {
+                        composerCard
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                    }
+
+                    if viewModel.isLoading && viewModel.notes.isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 40)
+                    } else if viewModel.notes.isEmpty && !isComposing {
+                        emptyComposer
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                    } else {
+                        if !viewModel.pinnedNotes.isEmpty {
+                            Section {
+                                ForEach(viewModel.pinnedNotes) { note in
                                     noteRow(note)
+                                        .padding(.horizontal)
                                 }
+                            } header: {
+                                Text("고정됨")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal)
+                                    .padding(.top, 8)
                             }
                         }
-                        .padding()
-                        .padding(.bottom, 80)
+                        if !viewModel.unpinnedNotes.isEmpty {
+                            ForEach(viewModel.unpinnedNotes) { note in
+                                noteRow(note)
+                                    .padding(.horizontal)
+                            }
+                        }
                     }
                 }
+                .padding(.vertical, 8)
+                .padding(.bottom, 80)
             }
 
-            Button { showNewNote = true } label: {
-                Image(systemName: "plus")
-                    .font(.title2)
-                    .fontWeight(.medium)
-                    .frame(width: 52, height: 52)
-                    .background(Color.primary)
-                    .foregroundStyle(Color(UIColor.systemBackground))
-                    .clipShape(Circle())
-                    .shadow(radius: 4)
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 24)
-        }
-        .alert("새 노트", isPresented: $showNewNote) {
-            TextField("내용", text: $newContent)
-            Button("저장") {
-                let text = newContent.trimmingCharacters(in: .whitespaces)
-                if !text.isEmpty {
-                    Task {
-                        await viewModel.create(projectId: project.id, content: text)
-                        newContent = ""
-                    }
+            if !isComposing {
+                Button {
+                    newContent = ""
+                    isComposing = true
+                    composerFocused = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .fontWeight(.medium)
+                        .frame(width: 52, height: 52)
+                        .background(Color.primary)
+                        .foregroundStyle(Color(UIColor.systemBackground))
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 24)
             }
-            Button("취소", role: .cancel) { newContent = "" }
         }
     }
+
+    // MARK: - 인라인 작성 카드 (노트 있을 때 상단)
+
+    private var composerCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextEditor(text: $newContent)
+                .focused($composerFocused)
+                .frame(minHeight: 100)
+                .scrollContentBackground(.hidden)
+
+            HStack {
+                Spacer()
+                Button("취소") {
+                    isComposing = false
+                    newContent = ""
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+                Button("저장") {
+                    saveNote()
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .disabled(newContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(8)
+    }
+
+    // MARK: - 빈 상태 입력창
+
+    private var emptyComposer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextEditor(text: $newContent)
+                .focused($composerFocused)
+                .frame(minHeight: 120)
+                .scrollContentBackground(.hidden)
+                .overlay(alignment: .topLeading) {
+                    if newContent.isEmpty {
+                        Text("노트를 작성하세요...")
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 8)
+                            .padding(.leading, 4)
+                            .allowsHitTesting(false)
+                    }
+                }
+
+            HStack {
+                Spacer()
+                Button("저장") {
+                    saveNote()
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .disabled(newContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(8)
+    }
+
+    // MARK: - 노트 행
 
     private func noteRow(_ note: Note) -> some View {
         NoteCard(note: note, viewModel: viewModel)
@@ -88,5 +159,17 @@ struct NotesTabView: View {
                     Label("삭제", systemImage: "trash")
                 }
             }
+    }
+
+    // MARK: - 저장
+
+    private func saveNote() {
+        let text = newContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        Task {
+            await viewModel.create(projectId: project.id, content: text)
+            newContent = ""
+            isComposing = false
+        }
     }
 }
