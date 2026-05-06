@@ -4,57 +4,65 @@ struct iPadRootView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @State private var listVM = ProjectListViewModel()
     @State private var selectedProject: Project? = nil
-    @State private var selectedSidebar: SidebarItem? = .projects
+    @State private var selectedTab: TabItem = .projects
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
-    enum SidebarItem: Hashable {
-        case projects
-        case portfolio
-        case trash
-        case settings
+    enum TabItem: Hashable {
+        case projects, portfolio, trash, settings
     }
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selectedSidebar) {
-                Section("라이브러리") {
-                    Label("프로젝트", systemImage: "rectangle.stack")
-                        .tag(SidebarItem.projects)
-                    Label("포트폴리오", systemImage: "person.crop.rectangle.stack")
-                        .tag(SidebarItem.portfolio)
-                    Label("휴지통", systemImage: "trash")
-                        .tag(SidebarItem.trash)
-                }
-                Section {
-                    Label("설정", systemImage: "gearshape")
-                        .tag(SidebarItem.settings)
-                }
-            }
-            .navigationTitle("Racconto")
-        } content: {
-            switch selectedSidebar {
-            case .projects:
-                ProjectListView(viewModel: listVM, selectedProject: $selectedProject)
-                    .navigationTitle("프로젝트")
-            case .portfolio:
-                PublicPortfolioView()
-            case .trash:
-                TrashView()
-            case .settings:
-                SettingsView(authViewModel: authViewModel)
-            case nil:
-                ContentUnavailableView("항목을 선택하세요", systemImage: "sidebar.left")
-            }
+        TabView(selection: $selectedTab) {
+            projectsTab
+                .tabItem { Label("프로젝트", systemImage: "rectangle.stack") }
+                .tag(TabItem.projects)
+
+            NavigationStack { PublicPortfolioView() }
+                .tabItem { Label("포트폴리오", systemImage: "person.crop.rectangle.stack") }
+                .tag(TabItem.portfolio)
+
+            NavigationStack { TrashView() }
+                .tabItem { Label("휴지통", systemImage: "trash") }
+                .tag(TabItem.trash)
+
+            NavigationStack { SettingsView(authViewModel: authViewModel) }
+                .tabItem { Label("설정", systemImage: "gearshape") }
+                .tag(TabItem.settings)
+        }
+    }
+
+    private var projectsTab: some View {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            ProjectListView(viewModel: listVM, selectedProject: $selectedProject)
+                .navigationTitle("프로젝트")
         } detail: {
-            if selectedSidebar == .projects {
-                if let project = selectedProject {
-                    ProjectDetailView(project: project)
-                        .id(project.id)
-                } else {
-                    ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
-                }
+            if let project = selectedProject {
+                ProjectDetailView(project: project)
+                    .id(project.id)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            sidebarToggleButton
+                        }
+                    }
             } else {
-                ContentUnavailableView("항목을 선택하세요", systemImage: "sidebar.left")
+                ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            sidebarToggleButton
+                        }
+                    }
             }
+        }
+    }
+
+    private var sidebarToggleButton: some View {
+        Button {
+            withAnimation {
+                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .symbolVariant(columnVisibility == .detailOnly ? .none : .fill)
         }
     }
 }

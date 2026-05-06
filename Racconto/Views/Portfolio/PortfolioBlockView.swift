@@ -1,5 +1,6 @@
 import SwiftUI
 import MarkdownUI
+import Kingfisher
 
 // 포트폴리오 아이템 그룹 (block_id 기준)
 struct PortfolioBlock: Identifiable {
@@ -46,20 +47,31 @@ struct PortfolioBlockView: View {
     @State private var lightboxPhotos: [Photo] = []
     @State private var lightboxIndex: Int = 0
     @State private var showLightbox = false
+    @State private var contentWidth: CGFloat = 0
 
     private var blocks: [PortfolioBlock] { groupPortfolioItems(items) }
 
     var body: some View {
-        ForEach(blocks) { block in
-            if block.isSideBySide {
-                sideBySideBlock(block)
-            } else if block.photoItems.isEmpty {
-                if let text = block.textItem?.textContent {
-                    Markdown(text)
-                        .font(.custom("Georgia", size: 16))
+        VStack(alignment: .leading, spacing: 16) {
+            // 컨테이너 폭 측정용
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: 0)
+                .background(GeometryReader { geo in
+                    Color.clear.onAppear { contentWidth = geo.size.width }
+                        .onChange(of: geo.size.width) { _, w in contentWidth = w }
+                })
+
+            ForEach(blocks) { block in
+                if block.isSideBySide {
+                    sideBySideBlock(block)
+                } else if block.photoItems.isEmpty {
+                    if let text = block.textItem?.textContent {
+                        Markdown(text)
+                            .font(.custom("Georgia", size: 16))
+                    }
+                } else {
+                    photoBlock(block)
                 }
-            } else {
-                photoBlock(block)
             }
         }
         .fullScreenCover(isPresented: $showLightbox) {
@@ -69,37 +81,37 @@ struct PortfolioBlockView: View {
 
     @ViewBuilder
     private func photoBlock(_ block: PortfolioBlock) -> some View {
-        let cols: Int = {
-            switch block.blockLayout {
-            case "grid": return sizeClass == .regular ? 4 : 3
-            case "wide": return 2
-            default: return 1
+        let photos = block.photoItems
+        if block.blockLayout == "single" || block.blockLayout == nil && photos.count == 1 {
+            VStack(spacing: 4) {
+                ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
+                    CachedImage(url: item.imageUrl, variant: .public, contentMode: .fit)
+                        .cornerRadius(2)
+                        .onTapGesture { openLightbox(block: block, index: idx) }
+                }
             }
-        }()
-        let gridCols = Array(repeating: GridItem(.flexible(), spacing: 4), count: cols)
-        LazyVGrid(columns: gridCols, spacing: 4) {
-            ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
-                CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
-                    .aspectRatio(1, contentMode: .fill)
-                    .clipped()
-                    .cornerRadius(2)
-                    .onTapGesture { openLightbox(block: block, index: idx) }
-            }
+        } else {
+            let cols = block.blockLayout == "wide" ? 2 : (sizeClass == .regular ? 4 : 3)
+            PortfolioJustifiedPhotoGrid(
+                items: photos,
+                cols: cols,
+                gap: 4,
+                containerWidth: contentWidth,
+                onTap: { openLightbox(block: block, index: $0) }
+            )
         }
     }
 
     @ViewBuilder
     private func sideBySideBlock(_ block: PortfolioBlock) -> some View {
         let isTextLeft = block.blockType == "side-left"
-        Group {
-            if sizeClass == .regular {
-                HStack(alignment: .top, spacing: 16) {
-                    sideParts(block: block, isTextLeft: isTextLeft)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    sideParts(block: block, isTextLeft: isTextLeft)
-                }
+        if sizeClass == .regular {
+            HStack(alignment: .top, spacing: 16) {
+                sideParts(block: block, isTextLeft: isTextLeft)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                sideParts(block: block, isTextLeft: isTextLeft)
             }
         }
     }
@@ -107,7 +119,7 @@ struct PortfolioBlockView: View {
     @ViewBuilder
     private func sideParts(block: PortfolioBlock, isTextLeft: Bool) -> some View {
         let photoCol = Group {
-            ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
+            ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
                 CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
@@ -135,5 +147,60 @@ struct PortfolioBlockView: View {
         }
         lightboxIndex = index
         showLightbox = true
+    }
+}
+
+// MARK: - Portfolio Justified Photo Grid
+
+private struct PortfolioJustifiedPhotoGrid: View {
+    let items: [PortfolioChapterItem]
+    let cols: Int
+    let gap: CGFloat
+    let containerWidth: CGFloat
+    let onTap: (Int) -> Void     // 전체 items 배열 내 인덱스
+
+    @State private var ratios: [Int: CGFloat] = [:]
+
+    private var rows: [[(index: Int, item: PortfolioChapterItem)]] {
+        let indexed = items.enumerated().map { (index: $0.offset, item: $0.element) }
+        return stride(from: 0, to: indexed.count, by: cols).map {
+            Array(indexed[$0..<min($0 + cols, indexed.count)])
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: gap) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                rowView(row)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func rowView(_ row: [(index: Int, item: PortfolioChapterItem)]) -> some View {
+        let rowRatios = row.map { ratios[$0.index] ?? 1.5 }
+        let totalGap = gap * CGFloat(max(0, row.count - 1))
+        let rowHeight = containerWidth > 0 ? (containerWidth - totalGap) / rowRatios.reduce(0, +) : 160
+
+        HStack(spacing: gap) {
+            ForEach(row.indices, id: \.self) { i in
+                let entry = row[i]
+                KFImage(cfUrl(entry.item.imageUrl, variant: .grid))
+                    .placeholder { Color(.secondarySystemBackground) }
+                    .resizable()
+                    .onSuccess { result in
+                        let size = result.image.size
+                        if size.height > 0 {
+                            ratios[entry.index] = size.width / size.height
+                        }
+                    }
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: rowHeight * rowRatios[i], height: rowHeight)
+                    .clipped()
+                    .cornerRadius(2)
+                    .onTapGesture { onTap(entry.index) }
+            }
+        }
+        .frame(height: rowHeight)
     }
 }

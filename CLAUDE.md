@@ -19,7 +19,7 @@ Racconto는 모든 사진가를 위한 스토리 창작 앱이며, 세 개의 �
 ### Backend (`backend/app/`)
 FastAPI + SQLAlchemy + PostgreSQL (Docker). `database.py`의 `get_db()`를 DI로 사용.
 
-### Backend 로컬 폴더 주소 (Racconto-iOS 작업 시 백엔드 코드 수정 금지)
+### Frontend / Backend 로컬 폴더 주소 (Racconto-iOS 작업 시 Frontend/Backend 코드 수정 절대 금지)
 /Users/dawoon/Racconto
 
 **라우터 목록** (`main.py`에 모두 등록됨):
