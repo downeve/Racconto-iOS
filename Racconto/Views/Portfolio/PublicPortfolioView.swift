@@ -6,9 +6,26 @@ struct PublicPortfolioView: View {
     @State private var usernameInput = ""
     @State private var submittedUsername = ""
     @State private var meLoaded = false
+    @State private var meLoading = false
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
+        content
+            .task {
+                guard !meLoaded else { return }
+                meLoaded = true
+                meLoading = true
+                await authViewModel.fetchMe()
+                meLoading = false
+                if let username = authViewModel.currentUsername, !username.isEmpty {
+                    submittedUsername = username
+                    await viewModel.load(username: username)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if let portfolio = viewModel.portfolio, !submittedUsername.isEmpty {
             portfolioContent(portfolio)
                 .navigationTitle(submittedUsername)
@@ -21,22 +38,13 @@ struct PublicPortfolioView: View {
                         }
                     }
                 }
-        } else if viewModel.isLoading {
+        } else if viewModel.isLoading || meLoading {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .navigationTitle("포트폴리오")
         } else {
             searchForm
                 .navigationTitle("포트폴리오")
-                .task {
-                    guard !meLoaded else { return }
-                    meLoaded = true
-                    await authViewModel.fetchMe()
-                    if let username = authViewModel.currentUsername, !username.isEmpty {
-                        submittedUsername = username
-                        await viewModel.load(username: username)
-                    }
-                }
         }
     }
 
@@ -124,28 +132,38 @@ struct PublicPortfolioView: View {
     @ViewBuilder
     private func portfolioProjectCard(_ project: PortfolioProject) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let coverUrl = project.coverImageUrl {
-                CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 200)
-                    .clipped()
-                    .cornerRadius(8)
+            // 커버 이미지 — 항상 고정 높이 (없으면 placeholder)
+            Group {
+                if let coverUrl = project.coverImageUrl {
+                    CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
+                } else {
+                    Color(.secondarySystemBackground)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .clipped()
+            .cornerRadius(8)
+
             Text(project.title)
                 .font(.title3)
                 .fontWeight(.semibold)
-            if let desc = project.description, !desc.isEmpty {
-                Text(desc)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+                .lineLimit(1)
+
+            // 설명 — 항상 2줄 높이 확보
+            Text(project.description ?? "")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, minHeight: 38, alignment: .topLeading)
+
             if let loc = project.location, !loc.isEmpty {
                 Label(loc, systemImage: "mappin")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(.bottom, 8)
     }
 
