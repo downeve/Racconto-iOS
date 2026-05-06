@@ -6,35 +6,38 @@ struct LightboxView: View {
     let initialIndex: Int
     var viewModel: PhotosViewModel?
     let projectId: String
+    var onRestore: ((Photo) -> Void)? = nil
+    var onPermanentDelete: ((Photo) -> Void)? = nil
 
     @State private var currentIndex: Int
     @State private var showEXIF = false
     @State private var showChapterPicker = false
 
-    init(photos: [Photo], initialIndex: Int, viewModel: PhotosViewModel?, projectId: String) {
+    init(
+        photos: [Photo],
+        initialIndex: Int,
+        viewModel: PhotosViewModel?,
+        projectId: String,
+        onRestore: ((Photo) -> Void)? = nil,
+        onPermanentDelete: ((Photo) -> Void)? = nil
+    ) {
         self.photos = photos
         self.initialIndex = initialIndex
         self.viewModel = viewModel
         self.projectId = projectId
+        self.onRestore = onRestore
+        self.onPermanentDelete = onPermanentDelete
         _currentIndex = State(initialValue: initialIndex)
     }
 
     var currentPhoto: Photo? { photos.indices.contains(currentIndex) ? photos[currentIndex] : nil }
+    private var isTrashMode: Bool { onRestore != nil }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            TabView(selection: $currentIndex) {
-                ForEach(Array(photos.enumerated()), id: \.element.id) { idx, photo in
-                    CachedImage(url: photo.imageUrl, variant: .public, contentMode: .fit)
-                        .tag(idx)
-                        .ignoresSafeArea()
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-
-            VStack {
+            VStack(spacing: 0) {
                 // 상단 바
                 HStack {
                     Button { dismiss() } label: {
@@ -53,9 +56,16 @@ struct LightboxView: View {
                     Color.clear.frame(width: 36, height: 36)
                 }
                 .padding(.horizontal)
-                .padding(.top)
+                .padding(.vertical, 12)
 
-                Spacer()
+                // 사진 영역 — 하단 바 위까지만 차지
+                TabView(selection: $currentIndex) {
+                    ForEach(Array(photos.enumerated()), id: \.element.id) { idx, photo in
+                        CachedImage(url: photo.imageUrl, variant: .public, contentMode: .fit)
+                            .tag(idx)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
 
                 // EXIF 패널
                 if showEXIF, let photo = currentPhoto {
@@ -65,16 +75,21 @@ struct LightboxView: View {
 
                 // 하단 바
                 if let photo = currentPhoto {
-                    bottomBar(photo: photo)
+                    if isTrashMode {
+                        trashBar(photo: photo)
+                    } else if viewModel != nil {
+                        editBar(photo: photo)
+                    }
                 }
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showEXIF)
     }
 
-    private func bottomBar(photo: Photo) -> some View {
-        VStack(spacing: 12) {
-            // 별점
+    // MARK: - 일반 편집 바
+
+    private func editBar(photo: Photo) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 ForEach(1...5, id: \.self) { n in
                     Button {
@@ -84,39 +99,37 @@ struct LightboxView: View {
                             .foregroundStyle(n <= (photo.rating ?? 0) ? .yellow : .white)
                     }
                 }
+                Spacer()
             }
-
-            // 컬러 라벨 + 액션
             HStack(spacing: 16) {
                 ForEach(["red", "orange", "yellow", "green", "blue"], id: \.self) { label in
                     colorLabelButton(photo: photo, label: label)
                 }
-
                 Spacer()
-
                 Button { showChapterPicker = true } label: {
                     Image(systemName: "text.badge.plus")
+                        .font(.title3)
                         .foregroundStyle(.white)
                 }
-
                 Button {
                     Task { await viewModel?.rotate(photoId: photo.id, direction: "left") }
                 } label: {
                     Image(systemName: "rotate.left")
+                        .font(.title3)
                         .foregroundStyle(.white)
                 }
-
                 Button {
                     Task { await viewModel?.rotate(photoId: photo.id, direction: "right") }
                 } label: {
                     Image(systemName: "rotate.right")
+                        .font(.title3)
                         .foregroundStyle(.white)
                 }
-
                 Button {
                     withAnimation { showEXIF.toggle() }
                 } label: {
                     Image(systemName: "info.circle")
+                        .font(.title3)
                         .foregroundStyle(showEXIF ? .yellow : .white)
                 }
             }
@@ -126,11 +139,39 @@ struct LightboxView: View {
         .background(.ultraThinMaterial)
         .sheet(isPresented: $showChapterPicker) {
             ChapterPickerSheet(projectId: projectId) { chapter in
-                Task {
-                    await viewModel?.addToChapter(photoIds: [photo.id], chapterId: chapter.id)
-                }
+                Task { await viewModel?.addToChapter(photoIds: [photo.id], chapterId: chapter.id) }
             }
         }
+    }
+
+    // MARK: - 휴지통 바
+
+    private func trashBar(photo: Photo) -> some View {
+        HStack(spacing: 0) {
+            Button {
+                onRestore?(photo)
+                dismiss()
+            } label: {
+                Label("복구", systemImage: "arrow.uturn.backward")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .foregroundStyle(.white)
+
+            Divider().frame(height: 24).background(.white.opacity(0.3))
+
+            Button {
+                onPermanentDelete?(photo)
+                dismiss()
+            } label: {
+                Label("영구 삭제", systemImage: "trash.fill")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .foregroundStyle(.red)
+        }
+        .padding(.horizontal, 20)
+        .background(.ultraThinMaterial)
     }
 
     private func colorLabelButton(photo: Photo, label: String) -> some View {
@@ -143,9 +184,7 @@ struct LightboxView: View {
             Circle()
                 .fill(colorMap[label] ?? .gray)
                 .frame(width: 20, height: 20)
-                .overlay(
-                    Circle().stroke(Color.white, lineWidth: photo.colorLabel == label ? 2 : 0).padding(-2)
-                )
+                .overlay(Circle().stroke(Color.white, lineWidth: photo.colorLabel == label ? 2 : 0).padding(-2))
         }
     }
 }
@@ -174,8 +213,6 @@ struct EXIFPanel: View {
     }
 
     private func exifRow(_ icon: String, _ text: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(.caption)
-            .foregroundStyle(.white)
+        Label(text, systemImage: icon).font(.caption).foregroundStyle(.white)
     }
 }
