@@ -93,7 +93,7 @@ SwiftUI + `@Observable` + URLSession async/await. 기존 FastAPI 백엔드 그�
 작업 완료 시 아래 Obsidian 파일을 직접 업데이트할 것 (iCloud 동기화 중).
 
 - **개발 일지**: `/Users/dawoon/Library/Mobile Documents/iCloud~md~obsidian/Documents/Dawoon's Notes/1. 공부/0) Racconto 프로젝트/Racconto-iOS 개발 일지 (최신).md`
-- **기술 스택**: `/Users/dawoon/Library/Mobile Documents/iCloud~md~obsidian/Documents/Dawoon's Notes/1. 공부/0) Racconto 프로젝트/Racconto-iOS 기술 스택 및 정보 (최신).md`
+- **기술 스택**: `/Users/dawoon/Library/Mobile Documents/iCloud~md~obsidian/Documents/Dawoon's Notes/1. 공부/0) Racconto 프로젝트/Racconto 기술 스택 및 정보 (최신).md`
 
 **개발 일지 규칙**:
 - 날짜 헤더: `## 2026-MM-DD (N차)` — 같은 날 여러 작업 시 차수 증가
