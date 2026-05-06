@@ -5,17 +5,33 @@ struct NotesTabView: View {
     var viewModel: NotesViewModel
     @State private var isComposing = false
     @State private var newContent = ""
+    @State private var newNoteType = "memo"
+    @State private var filterType: String? = nil
+    @State private var filterPinned = false
     @FocusState private var composerFocused: Bool
+
+    private var filteredNotes: [Note] {
+        viewModel.notes.filter { note in
+            (filterPinned ? note.isPinned : true) &&
+            (filterType == nil || note.noteType == filterType)
+        }
+    }
+    private var filteredPinned: [Note] { filteredNotes.filter { $0.isPinned } }
+    private var filteredUnpinned: [Note] { filteredNotes.filter { !$0.isPinned } }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView {
                 LazyVStack(spacing: 8) {
+                    // 필터 바
+                    filterBar
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
                     // 인라인 입력창
                     if isComposing {
                         composerCard
                             .padding(.horizontal)
-                            .padding(.top, 8)
                     }
 
                     if viewModel.isLoading && viewModel.notes.isEmpty {
@@ -25,11 +41,10 @@ struct NotesTabView: View {
                     } else if viewModel.notes.isEmpty && !isComposing {
                         emptyComposer
                             .padding(.horizontal)
-                            .padding(.top, 8)
                     } else {
-                        if !viewModel.pinnedNotes.isEmpty {
+                        if !filteredPinned.isEmpty {
                             Section {
-                                ForEach(viewModel.pinnedNotes) { note in
+                                ForEach(filteredPinned) { note in
                                     noteRow(note)
                                         .padding(.horizontal)
                                 }
@@ -40,14 +55,19 @@ struct NotesTabView: View {
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal)
-                                    .padding(.top, 8)
+                                    .padding(.top, 4)
                             }
                         }
-                        if !viewModel.unpinnedNotes.isEmpty {
-                            ForEach(viewModel.unpinnedNotes) { note in
-                                noteRow(note)
-                                    .padding(.horizontal)
-                            }
+                        ForEach(filteredUnpinned) { note in
+                            noteRow(note)
+                                .padding(.horizontal)
+                        }
+                        if filteredNotes.isEmpty && !isComposing {
+                            Text("해당하는 노트가 없습니다.")
+                                .font(.subheadline)
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 32)
                         }
                     }
                 }
@@ -58,6 +78,7 @@ struct NotesTabView: View {
             if !isComposing {
                 Button {
                     newContent = ""
+                    newNoteType = "memo"
                     isComposing = true
                     composerFocused = true
                 } label: {
@@ -76,10 +97,81 @@ struct NotesTabView: View {
         }
     }
 
+    // MARK: - 필터 바
+
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                filterChip(label: "전체", count: viewModel.notes.count, isActive: !filterPinned && filterType == nil) {
+                    filterPinned = false
+                    filterType = nil
+                }
+                filterChip(label: "고정됨", count: viewModel.pinnedNotes.count, isActive: filterPinned) {
+                    filterPinned = true
+                    filterType = nil
+                }
+                ForEach(noteTypeList, id: \.value) { type in
+                    let count = viewModel.notes.filter { ($0.noteType ?? "memo") == type.value }.count
+                    filterChip(label: type.label, count: count, isActive: !filterPinned && filterType == type.value) {
+                        filterPinned = false
+                        filterType = type.value
+                    }
+                }
+            }
+        }
+    }
+
+    private func filterChip(label: String, count: Int, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(.caption)
+                    .fontWeight(isActive ? .semibold : .regular)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption2)
+                        .foregroundStyle(isActive ? .primary : .tertiary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(isActive ? Color(.label).opacity(0.12) : Color(.tertiarySystemBackground))
+            .foregroundStyle(isActive ? Color(.label) : Color.secondary)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 카테고리 칩 피커 (작성 카드용)
+
+    private var categoryPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(noteTypeList, id: \.value) { type in
+                    Button {
+                        newNoteType = type.value
+                    } label: {
+                        Text(type.label)
+                            .font(.caption)
+                            .fontWeight(newNoteType == type.value ? .semibold : .regular)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(newNoteType == type.value ? type.color : Color(.tertiarySystemBackground))
+                            .foregroundStyle(newNoteType == type.value ? type.dotColor : Color.secondary)
+                            .cornerRadius(5)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
     // MARK: - 인라인 작성 카드 (노트 있을 때 상단)
 
     private var composerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
+            categoryPicker
+
             TextEditor(text: $newContent)
                 .focused($composerFocused)
                 .frame(minHeight: 100)
@@ -90,6 +182,7 @@ struct NotesTabView: View {
                 Button("취소") {
                     isComposing = false
                     newContent = ""
+                    newNoteType = "memo"
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -110,7 +203,9 @@ struct NotesTabView: View {
     // MARK: - 빈 상태 입력창
 
     private var emptyComposer: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
+            categoryPicker
+
             TextEditor(text: $newContent)
                 .focused($composerFocused)
                 .frame(minHeight: 120)
@@ -167,8 +262,9 @@ struct NotesTabView: View {
         let text = newContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         Task {
-            await viewModel.create(projectId: project.id, content: text)
+            await viewModel.create(projectId: project.id, content: text, noteType: newNoteType)
             newContent = ""
+            newNoteType = "memo"
             isComposing = false
         }
     }

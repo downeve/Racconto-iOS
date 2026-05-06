@@ -22,7 +22,7 @@ class NotesViewModel {
         } catch {}
     }
 
-    func create(projectId: String, content: String, noteType: String? = nil) async {
+    func create(projectId: String, content: String, noteType: String = "memo") async {
         do {
             let req = NoteCreateRequest(projectId: projectId, content: content, noteType: noteType)
             let note: Note = try await api.request("/notes/", method: "POST", body: req)
@@ -32,9 +32,9 @@ class NotesViewModel {
         } catch {}
     }
 
-    func update(noteId: String, content: String? = nil, isPinned: Bool? = nil) async {
+    func update(noteId: String, content: String? = nil, noteType: String? = nil, isPinned: Bool? = nil) async {
         do {
-            let req = NoteUpdateRequest(content: content, isPinned: isPinned)
+            let req = NoteUpdateRequest(content: content, noteType: noteType, isPinned: isPinned)
             let updated: Note = try await api.request("/notes/\(noteId)", method: "PUT", body: req)
             if let idx = notes.firstIndex(where: { $0.id == noteId }) { notes[idx] = updated }
         } catch {}
