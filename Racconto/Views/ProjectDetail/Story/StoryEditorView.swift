@@ -3,24 +3,33 @@ import SwiftUI
 struct StoryEditorView: View {
     var viewModel: StoryViewModel
     let project: Project
+    var scrollToChapterId: Binding<String?> = .constant(nil)
     @State private var showAddChapter = false
     @State private var newChapterTitle = ""
     @State private var showChapterPicker = false   // for "텍스트 추가"
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    if viewModel.chapterTree.isEmpty {
-                        ContentUnavailableView("챕터가 없습니다", systemImage: "text.book.closed")
-                            .padding(.top, 60)
-                    } else {
-                        ForEach(Array(viewModel.chapterTree.enumerated()), id: \.element.parent.id) { topIdx, node in
-                            ChapterSectionView(node: node, topIndex: topIdx + 1, viewModel: viewModel, project: project)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        if viewModel.chapterTree.isEmpty {
+                            ContentUnavailableView("챕터가 없습니다", systemImage: "text.book.closed")
+                                .padding(.top, 60)
+                        } else {
+                            ForEach(Array(viewModel.chapterTree.enumerated()), id: \.element.parent.id) { topIdx, node in
+                                ChapterSectionView(node: node, topIndex: topIdx + 1, viewModel: viewModel, project: project)
+                                    .id(node.parent.id)
+                            }
                         }
                     }
+                    .padding(.bottom, 100)
                 }
-                .padding(.bottom, 100)
+                .onChange(of: scrollToChapterId.wrappedValue) { _, id in
+                    guard let id else { return }
+                    withAnimation { proxy.scrollTo(id, anchor: .top) }
+                    scrollToChapterId.wrappedValue = nil
+                }
             }
 
             // FAB: 챕터 추가
@@ -92,6 +101,7 @@ struct ChapterSectionView: View {
                     blockList(for: sub)
                 }
                 .padding(.leading, 16)
+                .id(sub.id)
             }
         }
         .padding(.bottom, 8)

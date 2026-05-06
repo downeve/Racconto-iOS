@@ -3,11 +3,13 @@ import SwiftUI
 struct NotesTabView: View {
     let project: Project
     var viewModel: NotesViewModel
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var isComposing = false
     @State private var newContent = ""
     @State private var newNoteType = "memo"
     @State private var filterType: String? = nil
     @State private var filterPinned = false
+    @State private var showSidebar = true
     @FocusState private var composerFocused: Bool
 
     private var filteredNotes: [Note] {
@@ -20,18 +22,149 @@ struct NotesTabView: View {
     private var filteredUnpinned: [Note] { filteredNotes.filter { !$0.isPinned } }
 
     var body: some View {
+        Group {
+            if sizeClass == .regular {
+                iPadLayout
+            } else {
+                noteListContent(showFilterBar: true)
+            }
+        }
+    }
+
+    // MARK: - iPad 레이아웃
+
+    private var iPadLayout: some View {
+        HStack(spacing: 0) {
+            if showSidebar {
+                filterSidebar
+                Divider()
+            }
+            noteListContent(showFilterBar: false)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { showSidebar.toggle() }
+                } label: {
+                    Image(systemName: "sidebar.left")
+                        .symbolVariant(showSidebar ? .fill : .none)
+                }
+            }
+        }
+    }
+
+    // MARK: - 필터 사이드바 (iPad 전용)
+
+    private var filterSidebar: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                filterSidebarRow(label: "전체", count: viewModel.notes.count, isActive: !filterPinned && filterType == nil) {
+                    filterPinned = false
+                    filterType = nil
+                }
+                filterSidebarRow(label: "고정됨", count: viewModel.pinnedNotes.count, isActive: filterPinned) {
+                    filterPinned = true
+                    filterType = nil
+                }
+
+                Divider().padding(.vertical, 8).padding(.horizontal, 12)
+
+                ForEach(noteTypeList, id: \.value) { type in
+                    let count = viewModel.notes.filter { ($0.noteType ?? "memo") == type.value }.count
+                    filterSidebarRow(label: type.label, count: count, isActive: !filterPinned && filterType == type.value) {
+                        filterPinned = false
+                        filterType = type.value
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+        }
+        .frame(width: 200)
+        .background(Color(.secondarySystemBackground))
+    }
+
+    private func filterSidebarRow(label: String, count: Int, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label)
+                    .font(.subheadline)
+                    .fontWeight(isActive ? .semibold : .regular)
+                    .foregroundStyle(isActive ? Color(.label) : Color.secondary)
+                Spacer()
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(isActive ? Color(.label).opacity(0.08) : Color.clear)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 필터 바 (iPhone 전용)
+
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                filterChip(label: "전체", count: viewModel.notes.count, isActive: !filterPinned && filterType == nil) {
+                    filterPinned = false
+                    filterType = nil
+                }
+                filterChip(label: "고정됨", count: viewModel.pinnedNotes.count, isActive: filterPinned) {
+                    filterPinned = true
+                    filterType = nil
+                }
+                ForEach(noteTypeList, id: \.value) { type in
+                    let count = viewModel.notes.filter { ($0.noteType ?? "memo") == type.value }.count
+                    filterChip(label: type.label, count: count, isActive: !filterPinned && filterType == type.value) {
+                        filterPinned = false
+                        filterType = type.value
+                    }
+                }
+            }
+        }
+    }
+
+    private func filterChip(label: String, count: Int, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(.caption)
+                    .fontWeight(isActive ? .semibold : .regular)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption2)
+                        .foregroundStyle(isActive ? .primary : .tertiary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(isActive ? Color(.label).opacity(0.12) : Color(.tertiarySystemBackground))
+            .foregroundStyle(isActive ? Color(.label) : Color.secondary)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 노트 목록 (공통)
+
+    private func noteListContent(showFilterBar: Bool) -> some View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    // 필터 바
-                    filterBar
-                        .padding(.horizontal)
-                        .padding(.top, 8)
+                    if showFilterBar {
+                        filterBar
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                    }
 
-                    // 인라인 입력창
                     if isComposing {
                         composerCard
                             .padding(.horizontal)
+                            .padding(.top, showFilterBar ? 0 : 8)
                     }
 
                     if viewModel.isLoading && viewModel.notes.isEmpty {
@@ -41,6 +174,7 @@ struct NotesTabView: View {
                     } else if viewModel.notes.isEmpty && !isComposing {
                         emptyComposer
                             .padding(.horizontal)
+                            .padding(.top, showFilterBar ? 0 : 8)
                     } else {
                         if !filteredPinned.isEmpty {
                             Section {
@@ -95,51 +229,6 @@ struct NotesTabView: View {
                 .padding(.bottom, 24)
             }
         }
-    }
-
-    // MARK: - 필터 바
-
-    private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                filterChip(label: "전체", count: viewModel.notes.count, isActive: !filterPinned && filterType == nil) {
-                    filterPinned = false
-                    filterType = nil
-                }
-                filterChip(label: "고정됨", count: viewModel.pinnedNotes.count, isActive: filterPinned) {
-                    filterPinned = true
-                    filterType = nil
-                }
-                ForEach(noteTypeList, id: \.value) { type in
-                    let count = viewModel.notes.filter { ($0.noteType ?? "memo") == type.value }.count
-                    filterChip(label: type.label, count: count, isActive: !filterPinned && filterType == type.value) {
-                        filterPinned = false
-                        filterType = type.value
-                    }
-                }
-            }
-        }
-    }
-
-    private func filterChip(label: String, count: Int, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(.caption)
-                    .fontWeight(isActive ? .semibold : .regular)
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.caption2)
-                        .foregroundStyle(isActive ? .primary : .tertiary)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(isActive ? Color(.label).opacity(0.12) : Color(.tertiarySystemBackground))
-            .foregroundStyle(isActive ? Color(.label) : Color.secondary)
-            .cornerRadius(6)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - 카테고리 칩 피커 (작성 카드용)
