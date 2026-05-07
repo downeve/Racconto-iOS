@@ -1,7 +1,8 @@
 import Foundation
+import AuthenticationServices
 
 @Observable
-class AuthViewModel {
+class AuthViewModel: NSObject {
     var isAuthenticated: Bool = false
     var isLoading: Bool = false
     var errorMessage: String?
@@ -9,7 +10,8 @@ class AuthViewModel {
 
     private let api = RaccontoAPI.shared
 
-    init() {
+    override init() {
+        super.init()
         isAuthenticated = api.isAuthenticated
     }
 
@@ -27,7 +29,6 @@ class AuthViewModel {
         defer { isLoading = false }
 
         do {
-            // OAuth2PasswordRequestForm → application/x-www-form-urlencoded
             let response: AuthResponse = try await api.loginForm(email: email, password: password)
             api.setToken(response.accessToken)
             isAuthenticated = true
@@ -46,7 +47,6 @@ class AuthViewModel {
         do {
             let body = RegisterRequest(email: email, password: password, name: name)
             let _: EmptyResponse = try await api.request("/auth/register", method: "POST", body: body)
-            // 이메일 인증 안내 — 성공 처리는 뷰에서
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {
@@ -54,9 +54,94 @@ class AuthViewModel {
         }
     }
 
+    // MARK: - Apple Sign In (네이티브)
+
+    func loginWithApple(credential: ASAuthorizationAppleIDCredential) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard let tokenData = credential.identityToken,
+              let identityToken = String(data: tokenData, encoding: .utf8) else {
+            errorMessage = "Apple 로그인에 실패했습니다."
+            return
+        }
+
+        do {
+            struct AppleLoginBody: Encodable { let identityToken: String }
+            let response: AuthResponse = try await api.request(
+                "/auth/apple/ios",
+                method: "POST",
+                body: AppleLoginBody(identityToken: identityToken)
+            )
+            api.setToken(response.accessToken)
+            isAuthenticated = true
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Google / Naver (ASWebAuthenticationSession)
+
+    @MainActor
+    func loginWithOAuth(provider: String) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        let baseURL = "https://racconto.app/api"
+        guard let url = URL(string: "\(baseURL)/auth/\(provider)/login?platform=ios") else { return }
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let session = ASWebAuthenticationSession(
+                url: url,
+                callbackURLScheme: "racconto"
+            ) { [weak self] callbackURL, error in
+                guard let self else { continuation.resume(); return }
+
+                if let error {
+                    // 사용자가 취소한 경우는 에러 메시지 없이 종료
+                    if (error as? ASWebAuthenticationSessionError)?.code != .canceledLogin {
+                        self.errorMessage = "로그인에 실패했습니다."
+                    }
+                    continuation.resume()
+                    return
+                }
+
+                guard let callbackURL,
+                      let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+                      let token = components.queryItems?.first(where: { $0.name == "token" })?.value else {
+                    self.errorMessage = "로그인에 실패했습니다."
+                    continuation.resume()
+                    return
+                }
+
+                self.api.setToken(token)
+                self.isAuthenticated = true
+                continuation.resume()
+            }
+            session.prefersEphemeralWebBrowserSession = false
+            session.presentationContextProvider = self
+            session.start()
+        }
+    }
+
     func logout() {
         api.clearToken()
         isAuthenticated = false
+    }
+}
+
+// MARK: - ASWebAuthenticationPresentationContextProviding
+
+extension AuthViewModel: ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
     }
 }
 
