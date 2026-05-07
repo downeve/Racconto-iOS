@@ -138,9 +138,9 @@ struct LightboxView: View {
         .padding(.vertical, 16)
         .background(.ultraThinMaterial)
         .sheet(isPresented: $showChapterPicker) {
-            ChapterPickerSheet(projectId: projectId) { chapter in
+            ChapterPickerSheet(projectId: projectId, onSelect: { chapter in
                 Task { await viewModel?.addToChapter(photoIds: [photo.id], chapterId: chapter.id) }
-            }
+            }, photoId: photo.id)
         }
     }
 

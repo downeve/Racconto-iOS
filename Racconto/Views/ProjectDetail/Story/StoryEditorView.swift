@@ -1,12 +1,65 @@
 import SwiftUI
 
+// MARK: - 챕터 생성/수정 폼 시트
+
+private struct ChapterFormSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    let confirmLabel: String
+    let initialTitle: String
+    let initialDescription: String
+    let onConfirm: (String, String) -> Void
+
+    @State private var chapterTitle: String
+    @State private var chapterDescription: String
+
+    init(title: String, confirmLabel: String, initialTitle: String = "", initialDescription: String = "", onConfirm: @escaping (String, String) -> Void) {
+        self.title = title
+        self.confirmLabel = confirmLabel
+        self.initialTitle = initialTitle
+        self.initialDescription = initialDescription
+        self.onConfirm = onConfirm
+        _chapterTitle = State(initialValue: initialTitle)
+        _chapterDescription = State(initialValue: initialDescription)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("제목") {
+                    TextField("챕터 제목", text: $chapterTitle)
+                }
+                Section("설명 (선택)") {
+                    TextField("챕터 설명", text: $chapterDescription, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(confirmLabel) {
+                        onConfirm(chapterTitle.trimmingCharacters(in: .whitespaces), chapterDescription.trimmingCharacters(in: .whitespaces))
+                        dismiss()
+                    }
+                    .disabled(chapterTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - StoryEditorView
+
 struct StoryEditorView: View {
     var viewModel: StoryViewModel
     let project: Project
     var scrollToChapterId: Binding<String?> = .constant(nil)
     @State private var showAddChapter = false
-    @State private var newChapterTitle = ""
-    @State private var showChapterPicker = false   // for "텍스트 추가"
+    @State private var showChapterPicker = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -34,7 +87,6 @@ struct StoryEditorView: View {
 
             // FAB: 챕터 추가
             Button {
-                newChapterTitle = ""
                 showAddChapter = true
             } label: {
                 Image(systemName: "plus")
@@ -58,15 +110,10 @@ struct StoryEditorView: View {
                 }
             }
         }
-        .alert("새 챕터", isPresented: $showAddChapter) {
-            TextField("챕터 제목", text: $newChapterTitle)
-            Button("생성") {
-                let title = newChapterTitle.trimmingCharacters(in: .whitespaces)
-                if !title.isEmpty {
-                    Task { await viewModel.createChapter(title: title) }
-                }
+        .sheet(isPresented: $showAddChapter) {
+            ChapterFormSheet(title: "새 챕터", confirmLabel: "생성") { title, desc in
+                Task { await viewModel.createChapter(title: title, description: desc.isEmpty ? nil : desc) }
             }
-            Button("취소", role: .cancel) {}
         }
         .sheet(isPresented: $showChapterPicker) {
             ChapterPickerSheet(projectId: project.id) { chapter in
@@ -76,15 +123,15 @@ struct StoryEditorView: View {
     }
 }
 
+// MARK: - ChapterSectionView
+
 struct ChapterSectionView: View {
     let node: ChapterNode
     let topIndex: Int
     var viewModel: StoryViewModel
     let project: Project
-    @State private var editingTitle = false
-    @State private var newTitle = ""
+    @State private var editingChapter: Chapter? = nil
     @State private var showAddSub = false
-    @State private var subTitle = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -105,22 +152,20 @@ struct ChapterSectionView: View {
             }
         }
         .padding(.bottom, 8)
-        .alert("챕터 제목 수정", isPresented: $editingTitle) {
-            TextField("제목", text: $newTitle)
-            Button("저장") {
-                Task { await viewModel.updateChapter(id: node.parent.id, title: newTitle) }
+        .sheet(item: $editingChapter) { chapter in
+            ChapterFormSheet(
+                title: "챕터 수정",
+                confirmLabel: "저장",
+                initialTitle: chapter.title,
+                initialDescription: chapter.description ?? ""
+            ) { title, desc in
+                Task { await viewModel.updateChapter(id: chapter.id, title: title, description: desc.isEmpty ? nil : desc) }
             }
-            Button("취소", role: .cancel) {}
         }
-        .alert("서브챕터 추가", isPresented: $showAddSub) {
-            TextField("챕터 제목", text: $subTitle)
-            Button("생성") {
-                let title = subTitle.trimmingCharacters(in: .whitespaces)
-                if !title.isEmpty {
-                    Task { await viewModel.createChapter(title: title, parentId: node.parent.id) }
-                }
+        .sheet(isPresented: $showAddSub) {
+            ChapterFormSheet(title: "서브챕터 추가", confirmLabel: "생성") { title, desc in
+                Task { await viewModel.createChapter(title: title, description: desc.isEmpty ? nil : desc, parentId: node.parent.id) }
             }
-            Button("취소", role: .cancel) {}
         }
     }
 
@@ -135,6 +180,12 @@ struct ChapterSectionView: View {
                     .font(isTop ? .headline : .subheadline)
                     .fontWeight(isTop ? .semibold : .medium)
                     .foregroundStyle(isTop ? .primary : .secondary)
+                if let desc = chapter.description, !desc.isEmpty {
+                    Text(desc)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer()
@@ -157,14 +208,12 @@ struct ChapterSectionView: View {
 
             Menu {
                 Button {
-                    newTitle = chapter.title
-                    editingTitle = true
+                    editingChapter = chapter
                 } label: {
-                    Label("이름 수정", systemImage: "pencil")
+                    Label("수정", systemImage: "pencil")
                 }
                 if isTop {
                     Button {
-                        subTitle = ""
                         showAddSub = true
                     } label: {
                         Label("서브챕터 추가", systemImage: "plus")

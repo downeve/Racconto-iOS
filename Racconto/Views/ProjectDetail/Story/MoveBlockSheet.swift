@@ -13,7 +13,20 @@ struct MoveBlockSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Button("취소") { dismiss() }
+                Spacer()
+                Text("블록으로 이동")
+                    .font(.headline)
+                Spacer()
+                // 대칭 맞추기용 투명 버튼
+                Button("취소") { }.opacity(0)
+            }
+            .padding()
+
+            Divider()
+
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                     ForEach(otherBlocks) { block in
@@ -29,13 +42,12 @@ struct MoveBlockSheet: View {
                             }
                         } label: {
                             CachedImage(url: block.firstImageUrl, variant: .thumb, contentMode: .fill)
-                                .aspectRatio(3/2, contentMode: .fill)
+                                .aspectRatio(1, contentMode: .fill)
                                 .clipped()
                                 .cornerRadius(6)
                         }
                     }
 
-                    // 새 블록
                     Button {
                         Task {
                             await viewModel.moveToBlock(
@@ -57,18 +69,11 @@ struct MoveBlockSheet: View {
                             }
                             .foregroundStyle(.secondary)
                         }
-                        .aspectRatio(3/2, contentMode: .fill)
+                        .aspectRatio(1, contentMode: .fill)
                         .cornerRadius(6)
                     }
                 }
                 .padding()
-            }
-            .navigationTitle("블록으로 이동")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { dismiss() }
-                }
             }
         }
     }

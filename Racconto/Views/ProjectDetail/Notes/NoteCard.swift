@@ -42,6 +42,19 @@ struct NoteCard: View {
         .cornerRadius(8)
         .contentShape(Rectangle())
         .onTapGesture { showEditor = true }
+        .contextMenu {
+            Button {
+                Task { await viewModel.togglePin(note) }
+            } label: {
+                Label(note.isPinned ? "고정 해제" : "고정", systemImage: note.isPinned ? "pin.slash" : "pin")
+            }
+            Divider()
+            Button(role: .destructive) {
+                Task { await viewModel.delete(noteId: note.id) }
+            } label: {
+                Label("삭제", systemImage: "trash")
+            }
+        }
         .sheet(isPresented: $showEditor) {
             NoteEditorView(note: note, viewModel: viewModel)
         }
@@ -122,6 +135,14 @@ struct NoteEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("취소") { dismiss() }
+                }
+                ToolbarItem(placement: .principal) {
+                    Button {
+                        Task { await viewModel.togglePin(note) }
+                    } label: {
+                        Image(systemName: note.isPinned ? "pin.fill" : "pin")
+                            .foregroundStyle(note.isPinned ? .orange : .secondary)
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("저장") {

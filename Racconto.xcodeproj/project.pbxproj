@@ -10,10 +10,12 @@
 		A6517BC02FAA3DA600C77656 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BBF2FAA3DA600C77656 /* Kingfisher */; };
 		A6517BC32FAA3DE300C77656 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BC22FAA3DE300C77656 /* MarkdownUI */; };
 		A6517BC62FAA3DF700C77656 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A6517BC52FAA3DF700C77656 /* KeychainAccess */; };
+		A6BB089A2FAB832500CA6115 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A6BB08992FAB832500CA6115 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A63845F62FAA3AF70058E56A /* Racconto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Racconto.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6BB08992FAB832500CA6115 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -41,6 +43,7 @@
 		A63845ED2FAA3AF70058E56A = {
 			isa = PBXGroup;
 			children = (
+				A6BB08992FAB832500CA6115 /* Localizable.xcstrings */,
 				A63845F82FAA3AF70058E56A /* Racconto */,
 				A63845F72FAA3AF70058E56A /* Products */,
 			);
@@ -103,6 +106,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = A63845ED2FAA3AF70058E56A;
 			minimizedProjectReferenceProxies = 1;
@@ -126,6 +130,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6BB089A2FAB832500CA6115 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,6 +208,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -261,6 +267,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

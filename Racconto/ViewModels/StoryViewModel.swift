@@ -49,9 +49,9 @@ class StoryViewModel {
 
     // MARK: - Chapter CRUD
 
-    func createChapter(title: String, parentId: String? = nil) async {
+    func createChapter(title: String, description: String? = nil, parentId: String? = nil) async {
         do {
-            let req = ChapterCreateRequest(projectId: projectId, title: title, parentId: parentId)
+            let req = ChapterCreateRequest(projectId: projectId, title: title, description: description?.isEmpty == true ? nil : description, parentId: parentId)
             let chapter: Chapter = try await api.request("/chapters/", method: "POST", body: req)
             chapters.append(chapter)
             itemsByChapter[chapter.id] = []
@@ -60,9 +60,9 @@ class StoryViewModel {
         } catch {}
     }
 
-    func updateChapter(id: String, title: String) async {
+    func updateChapter(id: String, title: String, description: String? = nil) async {
         do {
-            let req = ChapterUpdateRequest(title: title)
+            let req = ChapterUpdateRequest(title: title, description: description?.isEmpty == true ? nil : description)
             let updated: Chapter = try await api.request("/chapters/\(id)", method: "PUT", body: req)
             if let idx = chapters.firstIndex(where: { $0.id == id }) { chapters[idx] = updated }
         } catch {}

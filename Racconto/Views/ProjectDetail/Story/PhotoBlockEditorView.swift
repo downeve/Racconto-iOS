@@ -1,4 +1,28 @@
 import SwiftUI
+import UniformTypeIdentifiers
+
+private struct PhotoDropDelegate: DropDelegate {
+    let targetItem: ChapterItem
+    @Binding var photos: [ChapterItem]
+    @Binding var draggingItemId: String?
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggingId = draggingItemId,
+              draggingId != targetItem.id,
+              let from = photos.firstIndex(where: { $0.id == draggingId }),
+              let to = photos.firstIndex(where: { $0.id == targetItem.id }) else { return }
+        photos.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingItemId = nil
+        return true
+    }
+}
 
 struct PhotoBlockEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -7,7 +31,10 @@ struct PhotoBlockEditorView: View {
     var viewModel: StoryViewModel
     @State private var photos: [ChapterItem]
     @State private var showMoveSheet = false
-    @State private var movingItem: ChapterItem? = nil
+    @State private var movingItem: ChapterItem?
+    @State private var draggingItemId: String?
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
     init(block: Block, chapterId: String, viewModel: StoryViewModel) {
         self.block = block
@@ -19,7 +46,6 @@ struct PhotoBlockEditorView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 레이아웃 Picker
                 Picker("레이아웃", selection: Binding(
                     get: { block.blockLayout },
                     set: { layout in
@@ -35,54 +61,19 @@ struct PhotoBlockEditorView: View {
 
                 Divider()
 
-                List {
-                    ForEach(photos) { item in
-                        HStack(spacing: 12) {
-                            CachedImage(url: item.imageUrl, variant: .thumb, contentMode: .fill)
-                                .frame(width: 56, height: 56)
-                                .clipped()
-                                .cornerRadius(6)
-
-                            Text(item.caption ?? "")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-
-                            Spacer()
-
-                            Menu {
-                                Button {
-                                    movingItem = item
-                                    showMoveSheet = true
-                                } label: {
-                                    Label("블록으로 이동", systemImage: "arrow.right.square")
-                                }
-                                Divider()
-                                Button(role: .destructive) {
-                                    Task {
-                                        await viewModel.deleteItem(chapterId: chapterId, itemId: item.id)
-                                        photos.removeAll { $0.id == item.id }
-                                    }
-                                } label: {
-                                    Label("블록에서 제거", systemImage: "minus.circle")
-                                }
-                            } label: {
-                                Image(systemName: "ellipsis")
-                                    .foregroundStyle(.secondary)
-                            }
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 2) {
+                        ForEach(photos) { item in
+                            photoCell(item)
                         }
                     }
-                    .onMove { offsets, destination in
-                        photos.move(fromOffsets: offsets, toOffset: destination)
-                        Task {
-                            await viewModel.reorderBlock(
-                                chapterId: chapterId,
-                                blockId: block.id,
-                                itemIds: photos.map(\.id)
-                            )
-                        }
-                    }
+                    .padding(2)
                 }
-                .environment(\.editMode, .constant(.active))
+                .onChange(of: draggingItemId) { old, new in
+                    guard old != nil, new == nil else { return }
+                    let ids = photos.map(\.id)
+                    Task { await viewModel.reorderBlock(chapterId: chapterId, blockId: block.id, itemIds: ids) }
+                }
             }
             .navigationTitle("블록 편집")
             .navigationBarTitleDisplayMode(.inline)
@@ -98,11 +89,44 @@ struct PhotoBlockEditorView: View {
                         chapterId: chapterId,
                         currentBlockId: block.id,
                         viewModel: viewModel
-                    ) {
-                        dismiss()
-                    }
+                    ) { dismiss() }
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func photoCell(_ item: ChapterItem) -> some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                CachedImage(url: item.imageUrl, variant: .thumb, contentMode: .fill)
+            }
+            .clipped()
+            .opacity(draggingItemId == item.id ? 0.4 : 1)
+            .contextMenu {
+                Button {
+                    movingItem = item
+                    showMoveSheet = true
+                } label: {
+                    Label("블록으로 이동", systemImage: "arrow.right.square")
+                }
+                Button(role: .destructive) {
+                    Task {
+                        await viewModel.deleteItem(chapterId: chapterId, itemId: item.id)
+                        photos.removeAll { $0.id == item.id }
+                    }
+                } label: {
+                    Label("블록에서 제거", systemImage: "minus.circle")
+                }
+            }
+            .onDrag {
+                draggingItemId = item.id
+                return NSItemProvider(object: item.id as NSString)
+            }
+            .onDrop(
+                of: [UTType.text],
+                delegate: PhotoDropDelegate(targetItem: item, photos: $photos, draggingItemId: $draggingItemId)
+            )
     }
 }
