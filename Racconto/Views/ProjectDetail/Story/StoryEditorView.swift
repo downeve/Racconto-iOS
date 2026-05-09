@@ -111,7 +111,7 @@ struct StoryEditorView: View {
             }
         }
         .sheet(isPresented: $showAddChapter) {
-            ChapterFormSheet(title: "새 챕터", confirmLabel: "생성") { title, desc in
+            ChapterFormSheet(title: String(localized: "새 챕터"), confirmLabel: String(localized: "생성")) { title, desc in
                 Task { await viewModel.createChapter(title: title, description: desc.isEmpty ? nil : desc) }
             }
         }
@@ -163,7 +163,7 @@ struct ChapterSectionView: View {
             }
         }
         .sheet(isPresented: $showAddSub) {
-            ChapterFormSheet(title: "서브챕터 추가", confirmLabel: "생성") { title, desc in
+            ChapterFormSheet(title: String(localized: "서브챕터 추가"), confirmLabel: String(localized: "생성")) { title, desc in
                 Task { await viewModel.createChapter(title: title, description: desc.isEmpty ? nil : desc, parentId: node.parent.id) }
             }
         }
