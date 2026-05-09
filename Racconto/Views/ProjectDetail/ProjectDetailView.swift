@@ -36,6 +36,13 @@ struct ProjectDetailView: View {
         .task {
             await photosVM.load(projectId: project.id)
         }
+        .onChange(of: project.id) { _, newId in
+            selectedTab = 0
+            photosVM = PhotosViewModel()
+            storyVM = StoryViewModel()
+            notesVM = NotesViewModel()
+            Task { await photosVM.load(projectId: newId) }
+        }
         .onChange(of: selectedTab) { _, tab in
             Task {
                 switch tab {
