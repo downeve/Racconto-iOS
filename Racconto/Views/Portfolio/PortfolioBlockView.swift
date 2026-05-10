@@ -107,17 +107,17 @@ struct PortfolioBlockView: View {
         let isTextLeft = block.blockType == "side-left"
         if sizeClass == .regular {
             HStack(alignment: .top, spacing: 16) {
-                sideParts(block: block, isTextLeft: isTextLeft)
+                sideParts(block: block, isTextLeft: isTextLeft, isIPad: true)
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                sideParts(block: block, isTextLeft: isTextLeft)
+                sideParts(block: block, isTextLeft: isTextLeft, isIPad: false)
             }
         }
     }
 
     @ViewBuilder
-    private func sideParts(block: PortfolioBlock, isTextLeft: Bool) -> some View {
+    private func sideParts(block: PortfolioBlock, isTextLeft: Bool, isIPad: Bool) -> some View {
         let photoCol = Group {
             ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
                 CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
@@ -137,6 +137,7 @@ struct PortfolioBlockView: View {
         } else {
             VStack { photoCol }
             VStack { textCol }
+                .padding(.leading, isIPad ? 24 : 0)
         }
     }
 
