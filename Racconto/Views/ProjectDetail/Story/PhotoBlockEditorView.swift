@@ -122,7 +122,9 @@ struct PhotoBlockEditorView: View {
             }
             .onDrag {
                 draggingItemId = item.id
-                return NSItemProvider(object: item.id as NSString)
+                let provider = DragEndAwareItemProvider(object: item.id as NSString)
+                provider.onEnd = { DispatchQueue.main.async { draggingItemId = nil } }
+                return provider
             }
             .onDrop(
                 of: [UTType.text],

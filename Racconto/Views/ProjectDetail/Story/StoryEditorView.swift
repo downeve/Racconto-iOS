@@ -1,6 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// 드래그 세션 종료(성공/취소 모두)를 감지하는 NSItemProvider
+// iOS에서 performDrop이 호출되지 않는 경우에도 draggingId를 리셋하기 위해 사용
+final class DragEndAwareItemProvider: NSItemProvider {
+    var onEnd: (() -> Void)?
+    deinit { onEnd?() }
+}
+
 // MARK: - 챕터 생성/수정 폼 시트
 
 private struct ChapterFormSheet: View {
@@ -287,7 +294,9 @@ struct ChapterSectionView: View {
                         .padding(.vertical, 4)
                         .onDrag {
                             draggingId = block.id
-                            return NSItemProvider(object: block.id as NSString)
+                            let provider = DragEndAwareItemProvider(object: block.id as NSString)
+                            provider.onEnd = { DispatchQueue.main.async { draggingId = nil } }
+                            return provider
                         }
                         .onDrop(of: [.text], delegate: BlockDropDelegate(
                             targetBlock: block,
