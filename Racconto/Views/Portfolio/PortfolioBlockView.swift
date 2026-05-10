@@ -85,7 +85,7 @@ struct PortfolioBlockView: View {
         if block.blockLayout == "single" || block.blockLayout == nil && photos.count == 1 {
             VStack(spacing: 4) {
                 ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
-                    CachedImage(url: item.imageUrl, variant: .public, contentMode: .fit)
+                    SingleFitPhoto(url: item.imageUrl)
                         .cornerRadius(2)
                         .onTapGesture { openLightbox(block: block, index: idx) }
                 }
@@ -147,6 +147,25 @@ struct PortfolioBlockView: View {
         }
         lightboxIndex = index
         showLightbox = true
+    }
+}
+
+// MARK: - Single Layout Photo (ratio-aware, no cropping)
+
+private struct SingleFitPhoto: View {
+    let url: String?
+    @State private var ratio: CGFloat = 3.0 / 2.0
+
+    var body: some View {
+        KFImage(cfUrl(url, variant: .public))
+            .placeholder { Color(.secondarySystemBackground) }
+            .resizable()
+            .onSuccess { result in
+                let size = result.image.size
+                if size.height > 0 { ratio = size.width / size.height }
+            }
+            .aspectRatio(ratio, contentMode: .fit)
+            .frame(maxWidth: .infinity)
     }
 }
 
