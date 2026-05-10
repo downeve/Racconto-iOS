@@ -99,10 +99,10 @@ class PhotosViewModel {
         } catch { await load(projectId: "") }
     }
 
-    func rotate(photoId: String, direction: String) async {
+    func rotate(photoId: String, angle: Int) async {
         do {
-            struct RotateBody: Encodable { let direction: String }
-            let updated: Photo = try await api.request("/photos/\(photoId)/rotate", method: "POST", body: RotateBody(direction: direction))
+            struct RotateBody: Encodable { let angle: Int }
+            let updated: Photo = try await api.request("/photos/\(photoId)/rotate", method: "POST", body: RotateBody(angle: angle))
             if let idx = photos.firstIndex(where: { $0.id == photoId }) { photos[idx] = updated }
         } catch {}
     }

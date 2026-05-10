@@ -22,6 +22,9 @@ struct Photo: Codable, Identifiable {
     var deletedAt: Date?
     var originalFilename: String?
     var folder: String?
+    var rotation: Int?
+    var originalImageUrl: String?
+    var isRotating: Bool?
 }
 
 struct PhotoMetadataRequest: Encodable {

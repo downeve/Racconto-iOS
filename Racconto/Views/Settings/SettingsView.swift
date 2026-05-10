@@ -400,7 +400,7 @@ struct SettingsView: View {
             confirmPassword = ""
             passwordSuccess = true
             try? await Task.sleep(for: .seconds(2))
-            passwordSuccess = false
+            authViewModel.logout()
         } catch let err as APIError {
             passwordError = err.errorDescription
         } catch {}

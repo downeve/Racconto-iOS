@@ -112,14 +112,14 @@ struct LightboxView: View {
                         .foregroundStyle(.white)
                 }
                 Button {
-                    Task { await viewModel?.rotate(photoId: photo.id, direction: "left") }
+                    Task { await viewModel?.rotate(photoId: photo.id, angle: 270) }
                 } label: {
                     Image(systemName: "rotate.left")
                         .font(.title3)
                         .foregroundStyle(.white)
                 }
                 Button {
-                    Task { await viewModel?.rotate(photoId: photo.id, direction: "right") }
+                    Task { await viewModel?.rotate(photoId: photo.id, angle: 90) }
                 } label: {
                     Image(systemName: "rotate.right")
                         .font(.title3)
