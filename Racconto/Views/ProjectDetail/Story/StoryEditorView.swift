@@ -179,6 +179,10 @@ struct ChapterSectionView: View {
             }
         }
         .padding(.bottom, 8)
+        .onDrop(of: [.text], isTargeted: nil) { _ in
+            draggingId = nil
+            return false
+        }
         .sheet(item: $editingChapter) { chapter in
             ChapterFormSheet(
                 title: "챕터 수정",
@@ -262,6 +266,7 @@ struct ChapterSectionView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(.secondarySystemBackground).opacity(0.5))
+        Divider().opacity(0.4)
     }
 
     @ViewBuilder

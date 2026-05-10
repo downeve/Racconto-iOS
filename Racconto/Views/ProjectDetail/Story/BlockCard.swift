@@ -177,6 +177,7 @@ struct BlockCard: View {
             }
         }
         .frame(height: 56)
+        .clipped()
     }
 
     private var photoColumn: some View {
