@@ -9,9 +9,9 @@ struct PhotoCard: View {
     let onLightbox: () -> Void
     let onAddToChapter: () -> Void
 
-    private let colorLabels = ["red", "orange", "yellow", "green", "blue"]
+    private let colorLabels = ["red", "yellow", "green", "blue", "purple"]
     private let colorMap: [String: Color] = [
-        "red": .red, "orange": .orange, "yellow": .yellow, "green": .green, "blue": .blue
+        "red": .red, "yellow": .yellow, "green": .green, "blue": .blue, "purple": .purple
     ]
 
     var body: some View {

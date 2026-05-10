@@ -1,5 +1,18 @@
 import Foundation
 
+enum PhotoSortBy: String, CaseIterable {
+    case `default`, takenAt, name
+    var label: String {
+        switch self {
+        case .default: "기본순"
+        case .takenAt: "촬영일순"
+        case .name:    "파일명순"
+        }
+    }
+}
+
+enum PhotoSortOrder { case asc, desc }
+
 @Observable
 class PhotosViewModel {
     var photos: [Photo] = []
@@ -7,16 +20,41 @@ class PhotosViewModel {
     var errorMessage: String?
     var ratingFilter: Int? = nil
     var colorFilter: String? = nil
+    var folderFilter: String? = nil
+    var sortBy: PhotoSortBy = .default
+    var sortOrder: PhotoSortOrder = .asc
     var isSelecting = false
     var selectedIds: Set<String> = []
     var columns = 2
 
+    var folders: [String] {
+        Array(Set(photos.compactMap(\.folder))).sorted()
+    }
+
     var filteredPhotos: [Photo] {
-        photos.filter { photo in
+        var result = photos.filter { photo in
             if let r = ratingFilter, photo.rating != r { return false }
             if let c = colorFilter, photo.colorLabel != c { return false }
+            if let f = folderFilter, photo.folder != f { return false }
             return true
         }
+        switch sortBy {
+        case .default:
+            break
+        case .takenAt:
+            result.sort {
+                let a = $0.takenAt ?? .distantPast
+                let b = $1.takenAt ?? .distantPast
+                return sortOrder == .asc ? a < b : a > b
+            }
+        case .name:
+            result.sort {
+                let a = $0.originalFilename ?? ""
+                let b = $1.originalFilename ?? ""
+                return sortOrder == .asc ? a < b : a > b
+            }
+        }
+        return result
     }
 
     private let api = RaccontoAPI.shared

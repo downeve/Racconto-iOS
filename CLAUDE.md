@@ -195,3 +195,7 @@ Image(systemName: "star.fill")
 
 
 앞으로 git commit을 생성할 때, 내 로컬 git config에 설정된 이름과 이메일만 사용해. 커밋 메시지 본문이나 하단에 Co-authored-by 같은 AI 기여자 태그를 절대 추가하지 마. 오직 내 기여로만 남게 해줘.
+
+## 워크트리 사용 금지
+
+Agent 도구로 서브에이전트를 생성할 때 `isolation: "worktree"` 파라미터를 절대 사용하지 말 것. 항상 main 브랜치에서 직접 작업할 것.

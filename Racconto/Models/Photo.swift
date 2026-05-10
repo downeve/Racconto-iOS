@@ -7,7 +7,7 @@ struct Photo: Codable, Identifiable {
     var caption: String?
     var order: Int
     var rating: Int?
-    var colorLabel: String?       // "red" | "orange" | "yellow" | "green" | "blue"
+    var colorLabel: String?       // "red" | "yellow" | "green" | "blue" | "purple"
     var takenAt: Date?
     var camera: String?
     var lens: String?

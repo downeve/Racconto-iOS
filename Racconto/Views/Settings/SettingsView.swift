@@ -4,7 +4,7 @@ struct UserSettings: Codable {
     var portfolioTheme: String?
     var username: String?
     var colorLabelRed: String?
-    var colorLabelOrange: String?
+    var colorLabelPurple: String?
     var colorLabelYellow: String?
     var colorLabelGreen: String?
     var colorLabelBlue: String?
@@ -16,7 +16,7 @@ struct SettingsUpdateRequest: Encodable {
 
 struct ColorLabelsUpdateRequest: Encodable {
     var colorLabelRed: String
-    var colorLabelOrange: String
+    var colorLabelPurple: String
     var colorLabelYellow: String
     var colorLabelGreen: String
     var colorLabelBlue: String
@@ -31,6 +31,13 @@ struct PasswordUpdateRequest: Encodable {
     let newPassword: String
 }
 
+struct WithdrawRequest: Encodable {
+    let password: String?
+    let lang: String
+}
+
+enum UsernameStatus { case idle, checking, available, taken, invalid }
+
 struct SettingsView: View {
     var authViewModel: AuthViewModel
     @State private var settings: UserSettings?
@@ -38,7 +45,7 @@ struct SettingsView: View {
 
     // 컬러 레이블
     @State private var labelRed = ""
-    @State private var labelOrange = ""
+    @State private var labelPurple = ""
     @State private var labelYellow = ""
     @State private var labelGreen = ""
     @State private var labelBlue = ""
@@ -46,8 +53,9 @@ struct SettingsView: View {
 
     // 유저네임
     @State private var usernameInput = ""
-    @State private var usernameError: String? = nil
+    @State private var usernameStatus: UsernameStatus = .idle
     @State private var usernameSaved = false
+    @State private var usernameCheckTask: Task<Void, Never>? = nil
 
     // 비밀번호
     @State private var currentPassword = ""
@@ -56,21 +64,26 @@ struct SettingsView: View {
     @State private var passwordError: String? = nil
     @State private var passwordSuccess = false
 
+    // 회원 탈퇴
+    @State private var showWithdrawConfirm = false
+    @State private var withdrawPassword = ""
+    @State private var withdrawError: String? = nil
+
     private let api = RaccontoAPI.shared
 
     private let colorRows: [(key: String, label: String, color: Color)] = [
         ("red",    "빨강", .red),
-        ("orange", "주황", .orange),
         ("yellow", "노랑", .yellow),
         ("green",  "초록", .green),
         ("blue",   "파랑", .blue),
+        ("purple", "보라", .purple),
     ]
 
     var body: some View {
         List {
             // MARK: 유저네임
             Section {
-                HStack(spacing: 2) {
+                HStack(spacing: 6) {
                     Text("racconto.app/")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -78,19 +91,70 @@ struct SettingsView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .font(.subheadline)
+                        .onChange(of: usernameInput) { _, newValue in
+                            scheduleUsernameCheck(newValue)
+                        }
+                    Group {
+                        switch usernameStatus {
+                        case .checking:
+                            ProgressView().scaleEffect(0.7)
+                        case .available:
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        case .taken, .invalid:
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+                        case .idle:
+                            EmptyView()
+                        }
+                    }
+                    .font(.subheadline)
                 }
-                if let err = usernameError {
-                    Text(err).font(.caption).foregroundStyle(.red)
-                }
-                if usernameSaved {
+                if usernameStatus == .invalid {
+                    Text("영문, 숫자, -, _ 만 사용 가능 (3자 이상)").font(.caption).foregroundStyle(.red)
+                } else if usernameStatus == .taken {
+                    Text("이미 사용 중인 유저네임입니다").font(.caption).foregroundStyle(.red)
+                } else if usernameSaved {
                     Text("저장됐습니다").font(.caption).foregroundStyle(.green)
                 }
                 Button("유저네임 저장") {
                     Task { await saveUsername() }
                 }
-                .disabled(usernameInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(
+                    usernameInput.trimmingCharacters(in: .whitespaces).isEmpty ||
+                    usernameStatus == .checking ||
+                    usernameStatus == .taken ||
+                    usernameStatus == .invalid
+                )
             } header: {
                 Text("유저네임")
+            }
+
+            // MARK: 사용량
+            Section {
+                HStack {
+                    Text("프로젝트")
+                    Spacer()
+                    Text("\(authViewModel.projectCount) / \(authViewModel.projectLimit)")
+                        .foregroundStyle(.secondary)
+                }
+                ProgressView(value: Double(authViewModel.projectCount), total: Double(max(authViewModel.projectLimit, 1)))
+                    .tint(authViewModel.projectCount >= authViewModel.projectLimit ? .red : .blue)
+                HStack {
+                    Text("사진")
+                    Spacer()
+                    Text("\(authViewModel.photoCount) / \(authViewModel.photoLimit)")
+                        .foregroundStyle(.secondary)
+                }
+                ProgressView(value: Double(authViewModel.photoCount), total: Double(max(authViewModel.photoLimit, 1)))
+                    .tint(authViewModel.photoCount >= authViewModel.photoLimit ? .red : .blue)
+                if let tier = authViewModel.tier {
+                    HStack {
+                        Text("플랜")
+                        Spacer()
+                        Text(tier).foregroundStyle(.secondary).textCase(.uppercase)
+                    }
+                }
+            } header: {
+                Text("사용량")
             }
 
             // MARK: 포트폴리오 테마
@@ -127,22 +191,24 @@ struct SettingsView: View {
             }
 
             // MARK: 비밀번호 변경
-            Section {
-                SecureField("현재 비밀번호", text: $currentPassword)
-                SecureField("새 비밀번호 (8자 이상)", text: $newPassword)
-                SecureField("새 비밀번호 확인", text: $confirmPassword)
-                if let err = passwordError {
-                    Text(err).font(.caption).foregroundStyle(.red)
+            if !authViewModel.isSocialUser {
+                Section {
+                    SecureField("현재 비밀번호", text: $currentPassword)
+                    SecureField("새 비밀번호 (8자 이상)", text: $newPassword)
+                    SecureField("새 비밀번호 확인", text: $confirmPassword)
+                    if let err = passwordError {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                    }
+                    if passwordSuccess {
+                        Text("비밀번호가 변경됐습니다").font(.caption).foregroundStyle(.green)
+                    }
+                    Button("비밀번호 변경") {
+                        Task { await changePassword() }
+                    }
+                    .disabled(currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
+                } header: {
+                    Text("비밀번호 변경")
                 }
-                if passwordSuccess {
-                    Text("비밀번호가 변경됐습니다").font(.caption).foregroundStyle(.green)
-                }
-                Button("비밀번호 변경") {
-                    Task { await changePassword() }
-                }
-                .disabled(currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
-            } header: {
-                Text("비밀번호 변경")
             }
 
             // MARK: 계정
@@ -152,9 +218,35 @@ struct SettingsView: View {
                 } label: {
                     Label("로그아웃", systemImage: "rectangle.portrait.and.arrow.right")
                 }
+                Button(role: .destructive) {
+                    withdrawPassword = ""
+                    withdrawError = nil
+                    showWithdrawConfirm = true
+                } label: {
+                    Label("회원 탈퇴", systemImage: "person.crop.circle.badge.minus")
+                }
             }
         }
         .navigationTitle("설정")
+        .alert("회원 탈퇴", isPresented: $showWithdrawConfirm) {
+            if !authViewModel.isSocialUser {
+                SecureField("비밀번호", text: $withdrawPassword)
+            }
+            Button("탈퇴", role: .destructive) {
+                Task { await withdraw() }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("탈퇴하면 모든 데이터가 삭제되며 복구할 수 없습니다.")
+        }
+        .alert("탈퇴 실패", isPresented: Binding(
+            get: { withdrawError != nil },
+            set: { if !$0 { withdrawError = nil } }
+        )) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text(withdrawError ?? "")
+        }
         .task {
             await loadSettings()
             await authViewModel.fetchMe()
@@ -169,7 +261,7 @@ struct SettingsView: View {
     private func labelBinding(for key: String) -> Binding<String> {
         switch key {
         case "red":    return $labelRed
-        case "orange": return $labelOrange
+        case "purple": return $labelPurple
         case "yellow": return $labelYellow
         case "green":  return $labelGreen
         default:       return $labelBlue
@@ -183,7 +275,7 @@ struct SettingsView: View {
             settings = try await api.request("/settings/")
             isDark          = settings?.portfolioTheme == "dark"
             labelRed    = settings?.colorLabelRed    ?? ""
-            labelOrange = settings?.colorLabelOrange ?? ""
+            labelPurple = settings?.colorLabelPurple ?? ""
             labelYellow = settings?.colorLabelYellow ?? ""
             labelGreen  = settings?.colorLabelGreen  ?? ""
             labelBlue   = settings?.colorLabelBlue   ?? ""
@@ -201,7 +293,7 @@ struct SettingsView: View {
         do {
             let req = ColorLabelsUpdateRequest(
                 colorLabelRed:    labelRed,
-                colorLabelOrange: labelOrange,
+                colorLabelPurple: labelPurple,
                 colorLabelYellow: labelYellow,
                 colorLabelGreen:  labelGreen,
                 colorLabelBlue:   labelBlue
@@ -213,8 +305,32 @@ struct SettingsView: View {
         } catch {}
     }
 
+    private func scheduleUsernameCheck(_ value: String) {
+        usernameCheckTask?.cancel()
+        let trimmed = value.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count >= 3 else { usernameStatus = .idle; return }
+        guard trimmed.range(of: "^[a-zA-Z0-9_-]+$", options: .regularExpression) != nil else {
+            usernameStatus = .invalid; return
+        }
+        if trimmed == authViewModel.currentUsername { usernameStatus = .idle; return }
+        usernameStatus = .checking
+        usernameCheckTask = Task {
+            do { try await Task.sleep(for: .milliseconds(400)) } catch { return }
+            await checkUsername(trimmed)
+        }
+    }
+
+    private func checkUsername(_ value: String) async {
+        struct CheckResponse: Decodable { let available: Bool }
+        do {
+            let res: CheckResponse = try await api.request("/auth/check-username/\(value)")
+            usernameStatus = res.available ? .available : .taken
+        } catch {
+            usernameStatus = .idle
+        }
+    }
+
     private func saveUsername() async {
-        usernameError = nil
         usernameSaved = false
         let trimmed = usernameInput.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
@@ -222,11 +338,26 @@ struct SettingsView: View {
             try await api.requestVoid("/auth/username", method: "PUT",
                 body: UsernameUpdateRequest(username: trimmed))
             authViewModel.currentUsername = trimmed
+            usernameStatus = .idle
             usernameSaved = true
             try? await Task.sleep(for: .seconds(2))
             usernameSaved = false
         } catch let err as APIError {
-            usernameError = err.errorDescription
+            usernameStatus = .taken
+            _ = err
+        } catch {}
+    }
+
+    private func withdraw() async {
+        withdrawError = nil
+        let lang = Locale.current.language.languageCode?.identifier == "ko" ? "ko" : "en"
+        let password: String? = authViewModel.isSocialUser ? nil : withdrawPassword
+        do {
+            try await api.requestVoid("/auth/withdraw", method: "DELETE",
+                body: WithdrawRequest(password: password, lang: lang))
+            authViewModel.logout()
+        } catch let err as APIError {
+            withdrawError = err.errorDescription
         } catch {}
     }
 

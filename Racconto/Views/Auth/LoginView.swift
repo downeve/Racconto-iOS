@@ -137,6 +137,25 @@ struct LoginView: View {
                             .cornerRadius(8)
                         }
                         .disabled(authViewModel.isLoading)
+
+                        // LINE
+                        Button {
+                            Task { await authViewModel.loginWithOAuth(provider: "line") }
+                        } label: {
+                            HStack(spacing: 10) {
+                                LineLogoMark()
+                                    .frame(width: 20, height: 20)
+                                Text("LINE으로 로그인")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color(red: 0.024, green: 0.780, blue: 0.333))
+                            .cornerRadius(8)
+                        }
+                        .disabled(authViewModel.isLoading)
                     }
 
                     Spacer().frame(height: 40)
@@ -222,6 +241,36 @@ private struct GoogleLogoMark: View {
         }
         p.closeSubpath()
         return p
+    }
+}
+
+// MARK: - LINE 로고 (말풍선)
+
+private struct LineLogoMark: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let s = size.width
+            // 말풍선 본체 (둥근 사각형)
+            let bubbleRect = CGRect(x: s * 0.05, y: s * 0.05, width: s * 0.90, height: s * 0.75)
+            let bubble = Path(roundedRect: bubbleRect, cornerRadius: s * 0.18)
+            ctx.fill(bubble, with: .color(.white))
+            // 꼬리 (좌하단 삼각형)
+            var tail = Path()
+            tail.move(to: CGPoint(x: s * 0.15, y: s * 0.80))
+            tail.addLine(to: CGPoint(x: s * 0.05, y: s * 0.95))
+            tail.addLine(to: CGPoint(x: s * 0.38, y: s * 0.80))
+            tail.closeSubpath()
+            ctx.fill(tail, with: .color(.white))
+            // 내부 횡선 3개
+            let lineColor = GraphicsContext.Shading.color(Color(red: 0.024, green: 0.780, blue: 0.333))
+            for i in 0..<3 {
+                let y = s * (0.26 + Double(i) * 0.165)
+                var line = Path()
+                line.move(to: CGPoint(x: s * 0.25, y: y))
+                line.addLine(to: CGPoint(x: s * 0.75, y: y))
+                ctx.stroke(line, with: lineColor, lineWidth: s * 0.09)
+            }
+        }
     }
 }
 

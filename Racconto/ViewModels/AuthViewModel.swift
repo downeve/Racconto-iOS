@@ -7,6 +7,14 @@ class AuthViewModel: NSObject {
     var isLoading: Bool = false
     var errorMessage: String?
     var currentUsername: String? = nil
+    var oauthProvider: String? = nil
+    var tier: String? = nil
+    var projectCount: Int = 0
+    var projectLimit: Int = 0
+    var photoCount: Int = 0
+    var photoLimit: Int = 0
+
+    var isSocialUser: Bool { oauthProvider != nil }
 
     private let api = RaccontoAPI.shared
 
@@ -20,6 +28,12 @@ class AuthViewModel: NSObject {
         do {
             let me: MeResponse = try await api.request("/auth/me")
             currentUsername = me.username
+            oauthProvider = me.oauthProvider
+            tier = me.tier
+            projectCount = me.projectCount ?? 0
+            projectLimit = me.projectLimit ?? 0
+            photoCount = me.photoCount ?? 0
+            photoLimit = me.photoLimit ?? 0
         } catch {}
     }
 

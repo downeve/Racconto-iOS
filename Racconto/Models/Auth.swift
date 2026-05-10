@@ -19,4 +19,10 @@ struct RegisterRequest: Encodable {
 struct MeResponse: Decodable {
     let email: String?
     let username: String?
+    let oauthProvider: String?
+    let tier: String?
+    let projectCount: Int?
+    let projectLimit: Int?
+    let photoCount: Int?
+    let photoLimit: Int?
 }

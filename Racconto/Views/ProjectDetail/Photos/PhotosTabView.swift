@@ -91,6 +91,31 @@ struct PhotosTabView: View {
                         .symbolVariant(viewModel.columns == defaultColumns ? .none : .fill)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    ForEach(PhotoSortBy.allCases, id: \.self) { s in
+                        Button {
+                            viewModel.sortBy = s
+                        } label: {
+                            Label(s.label, systemImage: viewModel.sortBy == s ? "checkmark" : "")
+                        }
+                    }
+                    if viewModel.sortBy != .default {
+                        Divider()
+                        Button {
+                            viewModel.sortOrder = viewModel.sortOrder == .asc ? .desc : .asc
+                        } label: {
+                            Label(
+                                viewModel.sortOrder == .asc ? "오름차순" : "내림차순",
+                                systemImage: viewModel.sortOrder == .asc ? "arrow.up" : "arrow.down"
+                            )
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .symbolVariant(viewModel.sortBy != .default ? .circle.fill : .none)
+                }
+            }
         }
         .fullScreenCover(item: $lightboxData) { data in
             LightboxView(photos: data.photos, initialIndex: data.index, viewModel: viewModel, projectId: project.id)
@@ -122,18 +147,28 @@ struct PhotosTabView: View {
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(label: "전체", isActive: viewModel.ratingFilter == nil && viewModel.colorFilter == nil) {
+                let noFilter = viewModel.ratingFilter == nil && viewModel.colorFilter == nil && viewModel.folderFilter == nil
+                FilterChip(label: "전체", isActive: noFilter) {
                     viewModel.ratingFilter = nil
                     viewModel.colorFilter = nil
+                    viewModel.folderFilter = nil
                 }
                 ForEach(1...5, id: \.self) { n in
                     FilterChip(label: String(repeating: "★", count: n), isActive: viewModel.ratingFilter == n) {
                         viewModel.ratingFilter = viewModel.ratingFilter == n ? nil : n
                     }
                 }
-                ForEach(["red", "orange", "yellow", "green", "blue"], id: \.self) { label in
+                ForEach(["red", "yellow", "green", "blue", "purple"], id: \.self) { label in
                     ColorFilterChip(label: label, isActive: viewModel.colorFilter == label) {
                         viewModel.colorFilter = viewModel.colorFilter == label ? nil : label
+                    }
+                }
+                if !viewModel.folders.isEmpty {
+                    Divider().frame(height: 16)
+                    ForEach(viewModel.folders, id: \.self) { folder in
+                        FilterChip(label: folderDisplayName(folder), isActive: viewModel.folderFilter == folder) {
+                            viewModel.folderFilter = viewModel.folderFilter == folder ? nil : folder
+                        }
                     }
                 }
             }
@@ -141,6 +176,10 @@ struct PhotosTabView: View {
             .padding(.vertical, 8)
         }
         .background(Color(.systemBackground))
+    }
+
+    private func folderDisplayName(_ folder: String) -> String {
+        folder.split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init) ?? folder
     }
 
     private var selectionBar: some View {
@@ -200,7 +239,7 @@ struct ColorFilterChip: View {
     let isActive: Bool
     let action: () -> Void
     private let colorMap: [String: Color] = [
-        "red": .red, "orange": .orange, "yellow": .yellow, "green": .green, "blue": .blue
+        "red": .red, "yellow": .yellow, "green": .green, "blue": .blue, "purple": .purple
     ]
 
     var body: some View {

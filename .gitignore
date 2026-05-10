@@ -6,3 +6,4 @@ DerivedData/
 *.hmap
 *.ipa
 *.xcarchive
+.claude/worktrees/
