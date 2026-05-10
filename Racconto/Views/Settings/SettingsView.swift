@@ -40,6 +40,7 @@ enum UsernameStatus { case idle, checking, available, taken, invalid }
 
 struct SettingsView: View {
     var authViewModel: AuthViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var settings: UserSettings?
     @State private var isDark = false
 
@@ -167,17 +168,36 @@ struct SettingsView: View {
 
             // MARK: 컬러 레이블
             Section {
-                ForEach(colorRows, id: \.key) { row in
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(row.color)
-                            .frame(width: 12, height: 12)
-                        Text(row.label)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 28, alignment: .leading)
-                        TextField("기본 이름", text: labelBinding(for: row.key))
-                            .font(.subheadline)
+                if horizontalSizeClass == .regular {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(colorRows, id: \.key) { row in
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(row.color)
+                                    .frame(width: 12, height: 12)
+                                Text(row.label)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 28, alignment: .leading)
+                                TextField("기본 이름", text: labelBinding(for: row.key))
+                                    .font(.subheadline)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                } else {
+                    ForEach(colorRows, id: \.key) { row in
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(row.color)
+                                .frame(width: 12, height: 12)
+                            Text(row.label)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 28, alignment: .leading)
+                            TextField("기본 이름", text: labelBinding(for: row.key))
+                                .font(.subheadline)
+                        }
                     }
                 }
                 if labelsSaved {

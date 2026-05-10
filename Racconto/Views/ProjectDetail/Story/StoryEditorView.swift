@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - 챕터 생성/수정 폼 시트
 
@@ -199,7 +200,7 @@ struct ChapterSectionView: View {
     private func chapterHeader(chapter: Chapter, isTop: Bool, label: String) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
-                Text("챕터 \(label)")
+                Text("Ch. \(label).")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Text(chapter.title)
@@ -273,21 +274,27 @@ struct ChapterSectionView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
         } else {
-            ForEach(blocks) { block in
-                BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel)
-                    .opacity(draggingId == block.id ? 0.4 : 1.0)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .onDrag {
-                        draggingId = block.id
-                        return NSItemProvider(object: block.id as NSString)
-                    }
-                    .onDrop(of: [.text], delegate: BlockDropDelegate(
-                        targetBlock: block,
-                        chapterId: chapter.id,
-                        viewModel: viewModel,
-                        draggingId: $draggingId
-                    ))
+            VStack(spacing: 0) {
+                ForEach(blocks) { block in
+                    BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel)
+                        .opacity(draggingId == block.id ? 0.4 : 1.0)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .onDrag {
+                            draggingId = block.id
+                            return NSItemProvider(object: block.id as NSString)
+                        }
+                        .onDrop(of: [.text], delegate: BlockDropDelegate(
+                            targetBlock: block,
+                            chapterId: chapter.id,
+                            viewModel: viewModel,
+                            draggingId: $draggingId
+                        ))
+                }
+            }
+            .onDrop(of: [.text], isTargeted: nil) { _ in
+                draggingId = nil
+                return false
             }
         }
     }

@@ -100,20 +100,18 @@ struct PhotosTabView: View {
                             Label(s.label, systemImage: viewModel.sortBy == s ? "checkmark" : "")
                         }
                     }
-                    if viewModel.sortBy != .default {
-                        Divider()
-                        Button {
-                            viewModel.sortOrder = viewModel.sortOrder == .asc ? .desc : .asc
-                        } label: {
-                            Label(
-                                viewModel.sortOrder == .asc ? "오름차순" : "내림차순",
-                                systemImage: viewModel.sortOrder == .asc ? "arrow.up" : "arrow.down"
-                            )
-                        }
+                    Divider()
+                    Button {
+                        viewModel.sortOrder = viewModel.sortOrder == .asc ? .desc : .asc
+                    } label: {
+                        Label(
+                            viewModel.sortOrder == .asc ? "오름차순" : "내림차순",
+                            systemImage: viewModel.sortOrder == .asc ? "arrow.up" : "arrow.down"
+                        )
                     }
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
-                        .symbolVariant(viewModel.sortBy != .default ? .circle.fill : .none)
+                        .symbolVariant(viewModel.sortOrder == .desc ? .circle.fill : .none)
                 }
             }
         }

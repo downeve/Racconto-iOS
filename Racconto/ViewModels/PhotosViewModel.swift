@@ -4,7 +4,7 @@ enum PhotoSortBy: String, CaseIterable {
     case `default`, takenAt, name
     var label: String {
         switch self {
-        case .default: "기본순"
+        case .default: "업로드"
         case .takenAt: "촬영일순"
         case .name:    "파일명순"
         }
@@ -40,7 +40,7 @@ class PhotosViewModel {
         }
         switch sortBy {
         case .default:
-            break
+            result.sort { sortOrder == .asc ? $0.order < $1.order : $0.order > $1.order }
         case .takenAt:
             result.sort {
                 let a = $0.takenAt ?? .distantPast

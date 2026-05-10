@@ -152,15 +152,11 @@ class AuthViewModel: NSObject {
 
 extension AuthViewModel: ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }?
-            .keyWindow
-            ?? UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .first?
-                .keyWindow
-            ?? UIWindow()
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        if let window = scene?.keyWindow { return window }
+        if let scene { return UIWindow(windowScene: scene) }
+        preconditionFailure("No UIWindowScene available")
     }
 }
 
