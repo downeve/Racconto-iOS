@@ -189,6 +189,19 @@ class StoryViewModel {
         await syncBlocks(chapterId: chapterId, blocks: currentBlocks)
     }
 
+    func moveBlockLocally(chapterId: String, from: Int, to: Int) {
+        var currentBlocks = blocks(for: chapterId)
+        guard from != to, currentBlocks.indices.contains(from), currentBlocks.indices.contains(to) else { return }
+        let block = currentBlocks.remove(at: from)
+        currentBlocks.insert(block, at: to)
+        applyLocalBlockOrder(chapterId: chapterId, blocks: currentBlocks)
+    }
+
+    func syncBlockOrder(chapterId: String) async {
+        let currentBlocks = blocks(for: chapterId)
+        await syncBlocks(chapterId: chapterId, blocks: currentBlocks)
+    }
+
     private func applyLocalBlockOrder(chapterId: String, blocks: [Block]) {
         var updated: [ChapterItem] = []
         var n = 0

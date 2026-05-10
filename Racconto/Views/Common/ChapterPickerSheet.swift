@@ -3,7 +3,7 @@ import SwiftUI
 struct ChapterPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     let projectId: String
-    let onSelect: (Chapter) -> Void
+    let onSelect: (Chapter, Set<String>) -> Void
     var photoId: String? = nil
 
     @State private var chapters: [Chapter] = []
@@ -21,7 +21,7 @@ struct ChapterPickerSheet: View {
                 } else {
                     List(chapters) { chapter in
                         Button {
-                            onSelect(chapter)
+                            onSelect(chapter, addedChapterIds)
                             dismiss()
                         } label: {
                             HStack(spacing: 8) {

@@ -116,6 +116,12 @@ class PhotosViewModel {
         }
     }
 
+    func removeFromChapter(photoId: String, chapterId: String) async {
+        do {
+            try await api.requestVoid("/chapters/\(chapterId)/photos/\(photoId)", method: "DELETE")
+        } catch {}
+    }
+
     func setCoverImage(projectId: String, imageUrl: String) async {
         do {
             let req = ProjectUpdateRequest(coverImageUrl: imageUrl)

@@ -134,7 +134,7 @@ struct PhotosTabView: View {
             }
         }
         .sheet(isPresented: $showChapterPicker) {
-            ChapterPickerSheet(projectId: project.id) { chapter in
+            ChapterPickerSheet(projectId: project.id) { chapter, _ in
                 Task { await viewModel.addToChapter(photoIds: chapterPickerPhotoIds, chapterId: chapter.id) }
             }
         }

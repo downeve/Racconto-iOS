@@ -116,7 +116,7 @@ struct StoryEditorView: View {
             }
         }
         .sheet(isPresented: $showChapterPicker) {
-            ChapterPickerSheet(projectId: project.id) { chapter in
+            ChapterPickerSheet(projectId: project.id) { chapter, _ in
                 Task { await viewModel.addTextItem(chapterId: chapter.id, content: "") }
             }
         }
@@ -125,6 +125,31 @@ struct StoryEditorView: View {
 
 // MARK: - ChapterSectionView
 
+private struct BlockDropDelegate: DropDelegate {
+    let targetBlock: Block
+    let chapterId: String
+    var viewModel: StoryViewModel
+    @Binding var draggingId: String?
+
+    func performDrop(info: DropInfo) -> Bool {
+        Task { await viewModel.syncBlockOrder(chapterId: chapterId) }
+        draggingId = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let id = draggingId, id != targetBlock.id else { return }
+        let blocks = viewModel.blocks(for: chapterId)
+        guard let from = blocks.firstIndex(where: { $0.id == id }),
+              let to = blocks.firstIndex(where: { $0.id == targetBlock.id }) else { return }
+        viewModel.moveBlockLocally(chapterId: chapterId, from: from, to: to)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+}
+
 struct ChapterSectionView: View {
     let node: ChapterNode
     let topIndex: Int
@@ -132,6 +157,7 @@ struct ChapterSectionView: View {
     let project: Project
     @State private var editingChapter: Chapter? = nil
     @State private var showAddSub = false
+    @State private var draggingId: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -249,8 +275,19 @@ struct ChapterSectionView: View {
         } else {
             ForEach(blocks) { block in
                 BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel)
+                    .opacity(draggingId == block.id ? 0.4 : 1.0)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
+                    .onDrag {
+                        draggingId = block.id
+                        return NSItemProvider(object: block.id as NSString)
+                    }
+                    .onDrop(of: [.text], delegate: BlockDropDelegate(
+                        targetBlock: block,
+                        chapterId: chapter.id,
+                        viewModel: viewModel,
+                        draggingId: $draggingId
+                    ))
             }
         }
     }

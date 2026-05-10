@@ -16,10 +16,6 @@ struct BlockCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text(blockTypeLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 Spacer()
 
                 if !block.isSideBySide && !block.photoItems.isEmpty {
@@ -61,12 +57,6 @@ struct BlockCard: View {
     }
 
     // MARK: - Sub-views
-
-    private var blockTypeLabel: String {
-        if block.isSideBySide { return "Side-by-Side 블록" }
-        if block.photoItems.isEmpty { return "TEXT 블록" }
-        return "PHOTO 블록"
-    }
 
     private var layoutMenu: some View {
         Menu {

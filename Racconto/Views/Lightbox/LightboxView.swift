@@ -102,7 +102,7 @@ struct LightboxView: View {
                 Spacer()
             }
             HStack(spacing: 16) {
-                ForEach(["red", "orange", "yellow", "green", "blue"], id: \.self) { label in
+                ForEach(["red", "yellow", "green", "blue", "purple"], id: \.self) { label in
                     colorLabelButton(photo: photo, label: label)
                 }
                 Spacer()
@@ -138,8 +138,17 @@ struct LightboxView: View {
         .padding(.vertical, 16)
         .background(.ultraThinMaterial)
         .sheet(isPresented: $showChapterPicker) {
-            ChapterPickerSheet(projectId: projectId, onSelect: { chapter in
-                Task { await viewModel?.addToChapter(photoIds: [photo.id], chapterId: chapter.id) }
+            ChapterPickerSheet(projectId: projectId, onSelect: { chapter, alreadyIn in
+                Task {
+                    if alreadyIn.contains(chapter.id) {
+                        await viewModel?.removeFromChapter(photoId: photo.id, chapterId: chapter.id)
+                    } else {
+                        for oldChapterId in alreadyIn {
+                            await viewModel?.removeFromChapter(photoId: photo.id, chapterId: oldChapterId)
+                        }
+                        await viewModel?.addToChapter(photoIds: [photo.id], chapterId: chapter.id)
+                    }
+                }
             }, photoId: photo.id)
         }
     }
@@ -176,7 +185,7 @@ struct LightboxView: View {
 
     private func colorLabelButton(photo: Photo, label: String) -> some View {
         let colorMap: [String: Color] = [
-            "red": .red, "orange": .orange, "yellow": .yellow, "green": .green, "blue": .blue
+            "red": .red, "yellow": .yellow, "green": .green, "blue": .blue, "purple": .purple
         ]
         return Button {
             Task { await viewModel?.updateColorLabel(photoId: photo.id, label: photo.colorLabel == label ? nil : label) }
