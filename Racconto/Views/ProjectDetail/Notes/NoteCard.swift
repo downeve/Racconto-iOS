@@ -1,6 +1,11 @@
 import SwiftUI
 import MarkdownUI
 
+// 단일 \n → 마크다운 hard break (줄 끝 공백 2개 + \n), 연속 \n은 단락 구분으로 유지
+private func applyHardBreaks(_ text: String) -> String {
+    text.replacingOccurrences(of: "([^\n])\n([^\n])", with: "$1  \n$2", options: .regularExpression)
+}
+
 struct NoteCard: View {
     let note: Note
     var viewModel: NotesViewModel
@@ -32,7 +37,7 @@ struct NoteCard: View {
                     .foregroundStyle(.tertiary)
             }
 
-            Markdown(note.content)
+            Markdown(applyHardBreaks(note.content))
                 .markdownTextStyle { FontSize(.em(0.9)) }
                 .frame(maxHeight: 64)
                 .clipped()
@@ -120,7 +125,7 @@ struct NoteEditorView: View {
 
                 if showPreview {
                     ScrollView {
-                        Markdown(content.isEmpty ? "*내용 없음*" : content)
+                        Markdown(content.isEmpty ? "*내용 없음*" : applyHardBreaks(content))
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
