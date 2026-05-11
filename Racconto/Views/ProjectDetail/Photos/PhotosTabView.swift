@@ -16,7 +16,7 @@ struct PhotosTabView: View {
     @State private var showChapterPicker = false
     @State private var chapterPickerPhotoIds: [String] = []
 
-    private var defaultColumns: Int { sizeClass == .regular ? 4 : 2 }
+    private var defaultColumns: Int { sizeClass == .regular ? 4 : 3 }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -34,7 +34,6 @@ struct PhotosTabView: View {
                 } else {
                     PhotoGridView(
                         photos: viewModel.filteredPhotos,
-                        columns: viewModel.columns,
                         viewModel: viewModel,
                         project: project,
                         onLightbox: { photos, idx in lightboxData = LightboxData(photos: photos, index: idx) },
@@ -82,17 +81,6 @@ struct PhotosTabView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    let range = sizeClass == .regular ? [3, 4, 5] : [1, 2, 3]
-                    ForEach(range, id: \.self) { n in
-                        Button("\(n)열") { viewModel.columns = n }
-                    }
-                } label: {
-                    Image(systemName: "square.grid.2x2")
-                        .symbolVariant(viewModel.columns == defaultColumns ? .none : .fill)
-                }
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
                     ForEach(PhotoSortBy.allCases, id: \.self) { s in
                         Button {
                             viewModel.sortBy = s
@@ -136,7 +124,7 @@ struct PhotosTabView: View {
                 Task { await viewModel.addToChapter(photoIds: chapterPickerPhotoIds, chapterId: chapter.id) }
             }
         }
-        .onAppear { if viewModel.columns == 2 { viewModel.columns = defaultColumns } }
+        .onAppear { viewModel.columns = defaultColumns }
         .onChange(of: UploadService.shared.completedCount) { _, _ in
             Task { await viewModel.load(projectId: project.id) }
         }
