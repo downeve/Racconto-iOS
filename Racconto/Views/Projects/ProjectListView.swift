@@ -6,41 +6,44 @@ struct ProjectListView: View {
     var selectedProject: Binding<Project?>?
 
     @State private var showForm = false
-    @State private var isEditing = false
     @State private var deleteAlert: Project? = nil
 
+    private func columnCount(for width: CGFloat) -> Int {
+        if width < 600 { return 2 }
+        if width < 1000 { return 3 }
+        return 4
+    }
+
     var body: some View {
-        List {
-            ForEach(viewModel.projects) { project in
-                row(for: project)
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            deleteAlert = project
-                        } label: {
-                            Label("삭제", systemImage: "trash")
-                        }
+        GeometryReader { geo in
+            let cols = columnCount(for: geo.size.width)
+            let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: cols)
+
+            ScrollView {
+                LazyVGrid(columns: gridColumns, spacing: 16) {
+                    ForEach(viewModel.projects) { project in
+                        cell(for: project)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteAlert = project
+                                } label: {
+                                    Label("삭제", systemImage: "trash")
+                                }
+                            }
                     }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                }
+                .padding(12)
             }
-            .onMove { offsets, destination in
-                viewModel.move(from: offsets, to: destination)
-            }
+            .refreshable { await viewModel.load() }
         }
-        .listStyle(.plain)
         .navigationTitle("프로젝트")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showForm = true
-                } label: {
+                Button { showForm = true } label: {
                     Image(systemName: "plus")
                 }
             }
-            ToolbarItem(placement: .navigationBarLeading) {
-                EditButton()
-            }
         }
-        .refreshable { await viewModel.load() }
         .task { await viewModel.load() }
         .sheet(isPresented: $showForm) {
             ProjectFormView(viewModel: viewModel)
@@ -71,18 +74,24 @@ struct ProjectListView: View {
     }
 
     @ViewBuilder
-    private func row(for project: Project) -> some View {
+    private func cell(for project: Project) -> some View {
         if sizeClass == .regular, let binding = selectedProject {
-            // iPad: tap to select
-            ProjectCard(project: project)
+            ProjectGridCard(project: project)
                 .contentShape(Rectangle())
                 .onTapGesture { binding.wrappedValue = project }
-                .background(binding.wrappedValue?.id == project.id ? Color.accentColor.opacity(0.08) : Color.clear)
+                .overlay(
+                    Group {
+                        if binding.wrappedValue?.id == project.id {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.accentColor, lineWidth: 2)
+                        }
+                    }
+                )
         } else {
-            // iPhone: NavigationLink
             NavigationLink(destination: ProjectDetailView(project: project)) {
-                ProjectCard(project: project)
+                ProjectGridCard(project: project)
             }
+            .buttonStyle(.plain)
         }
     }
 }

@@ -1,35 +1,37 @@
 import SwiftUI
 
-struct ProjectCard: View {
+struct ProjectGridCard: View {
     let project: Project
 
     var body: some View {
-        HStack(spacing: 12) {
-            CachedImage(url: project.coverImageUrl, variant: .thumb, contentMode: .fill)
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .background(Color(.tertiarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+        VStack(alignment: .leading, spacing: 6) {
+            CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
+                .aspectRatio(2/3, contentMode: .fill)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .background(
+                    Color(.tertiarySystemBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                )
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(project.title)
-                    .font(.body)
+                    .font(.subheadline)
                     .fontWeight(.medium)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .foregroundStyle(.primary)
 
-                HStack(spacing: 6) {
-                    StatusBadge(status: project.status)
-                    if let location = project.location, !location.isEmpty {
-                        Label(location, systemImage: "mappin")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
+                StatusBadge(status: project.status)
+
+                if let location = project.location, !location.isEmpty {
+                    Label(location, systemImage: "mappin")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
-            Spacer()
+            .padding(.horizontal, 2)
         }
-        .padding(.vertical, 4)
     }
 }
 
