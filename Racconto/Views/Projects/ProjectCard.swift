@@ -1,5 +1,37 @@
 import SwiftUI
 
+struct ProjectCard: View {
+    let project: Project
+
+    var body: some View {
+        HStack(spacing: 12) {
+            CachedImage(url: project.coverImageUrl, variant: .thumb, contentMode: .fill)
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .background(Color(.tertiarySystemBackground).clipShape(RoundedRectangle(cornerRadius: 6)))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(project.title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    StatusBadge(status: project.status)
+                    if let location = project.location, !location.isEmpty {
+                        Label(location, systemImage: "mappin")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 struct ProjectGridCard: View {
     let project: Project
 

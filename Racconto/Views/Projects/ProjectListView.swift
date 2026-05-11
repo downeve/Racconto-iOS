@@ -8,6 +8,8 @@ struct ProjectListView: View {
     @State private var showForm = false
     @State private var deleteAlert: Project? = nil
 
+    private var isSidebar: Bool { selectedProject != nil }
+
     private func columnCount(for width: CGFloat) -> Int {
         if width < 600 { return 2 }
         if width < 1000 { return 3 }
@@ -15,26 +17,12 @@ struct ProjectListView: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
-            let cols = columnCount(for: geo.size.width)
-            let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: cols)
-
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 16) {
-                    ForEach(viewModel.projects) { project in
-                        cell(for: project)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    deleteAlert = project
-                                } label: {
-                                    Label("삭제", systemImage: "trash")
-                                }
-                            }
-                    }
-                }
-                .padding(12)
+        Group {
+            if isSidebar {
+                sidebarList
+            } else {
+                phoneGrid
             }
-            .refreshable { await viewModel.load() }
         }
         .navigationTitle("프로젝트")
         .toolbar {
@@ -73,25 +61,57 @@ struct ProjectListView: View {
         }
     }
 
-    @ViewBuilder
-    private func cell(for project: Project) -> some View {
-        if sizeClass == .regular, let binding = selectedProject {
-            ProjectGridCard(project: project)
-                .contentShape(Rectangle())
-                .onTapGesture { binding.wrappedValue = project }
-                .overlay(
-                    Group {
-                        if binding.wrappedValue?.id == project.id {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.accentColor, lineWidth: 2)
+    // iPad 사이드바: 1열 리스트
+    private var sidebarList: some View {
+        List {
+            ForEach(viewModel.projects) { project in
+                ProjectCard(project: project)
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedProject?.wrappedValue = project }
+                    .background(
+                        selectedProject?.wrappedValue?.id == project.id
+                            ? Color.accentColor.opacity(0.08)
+                            : Color.clear
+                    )
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            deleteAlert = project
+                        } label: {
+                            Label("삭제", systemImage: "trash")
                         }
                     }
-                )
-        } else {
-            NavigationLink(destination: ProjectDetailView(project: project)) {
-                ProjectGridCard(project: project)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
             }
-            .buttonStyle(.plain)
+        }
+        .listStyle(.plain)
+        .refreshable { await viewModel.load() }
+    }
+
+    // iPhone: 그리드
+    private var phoneGrid: some View {
+        GeometryReader { geo in
+            let cols = columnCount(for: geo.size.width)
+            let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: cols)
+
+            ScrollView {
+                LazyVGrid(columns: gridColumns, spacing: 16) {
+                    ForEach(viewModel.projects) { project in
+                        NavigationLink(destination: ProjectDetailView(project: project)) {
+                            ProjectGridCard(project: project)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                deleteAlert = project
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+                .padding(12)
+            }
+            .refreshable { await viewModel.load() }
         }
     }
 }
