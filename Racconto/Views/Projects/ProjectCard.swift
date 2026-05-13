@@ -38,7 +38,7 @@ struct ProjectGridCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Color(.tertiarySystemBackground)
-                .aspectRatio(2/3, contentMode: .fit)
+                .aspectRatio(1, contentMode: .fit)
                 .overlay {
                     CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
                 }
