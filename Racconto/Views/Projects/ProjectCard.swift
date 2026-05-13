@@ -38,7 +38,7 @@ struct ProjectGridCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
-                .aspectRatio(2/3, contentMode: .fill)
+                .aspectRatio(2/3, contentMode: .fit)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .background(
