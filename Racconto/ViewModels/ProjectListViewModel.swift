@@ -16,6 +16,8 @@ class ProjectListViewModel {
             projects = try await api.request("/projects/")
         } catch let err as APIError {
             errorMessage = err.errorDescription
+        } catch is CancellationError {
+            // refreshable 취소 시 무시
         } catch {
             errorMessage = error.localizedDescription
         }

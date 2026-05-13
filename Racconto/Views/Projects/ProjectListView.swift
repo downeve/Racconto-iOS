@@ -10,13 +10,7 @@ struct ProjectListView: View {
 
     private var isSidebar: Bool { selectedProject != nil }
 
-    private func columnCount(for width: CGFloat) -> Int {
-        if width < 600 { return 2 }
-        if width < 1000 { return 3 }
-        return 4
-    }
-
-    var body: some View {
+var body: some View {
         Group {
             if isSidebar {
                 sidebarList
@@ -87,31 +81,28 @@ struct ProjectListView: View {
         .refreshable { await viewModel.load() }
     }
 
-    // iPhone: 그리드
+    // iPhone: 그리드 (2열 고정)
     private var phoneGrid: some View {
-        GeometryReader { geo in
-            let cols = columnCount(for: geo.size.width)
-            let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: cols)
+        let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
 
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 16) {
-                    ForEach(viewModel.projects) { project in
-                        NavigationLink(destination: ProjectDetailView(project: project)) {
-                            ProjectGridCard(project: project)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                deleteAlert = project
-                            } label: {
-                                Label("삭제", systemImage: "trash")
-                            }
+        return ScrollView {
+            LazyVGrid(columns: gridColumns, spacing: 16) {
+                ForEach(viewModel.projects) { project in
+                    NavigationLink(destination: ProjectDetailView(project: project)) {
+                        ProjectGridCard(project: project)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            deleteAlert = project
+                        } label: {
+                            Label("삭제", systemImage: "trash")
                         }
                     }
                 }
-                .padding(12)
             }
-            .refreshable { await viewModel.load() }
+            .padding(12)
         }
+        .refreshable { await viewModel.load() }
     }
 }
