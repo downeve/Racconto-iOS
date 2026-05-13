@@ -37,14 +37,12 @@ struct ProjectGridCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
+            Color(.tertiarySystemBackground)
                 .aspectRatio(2/3, contentMode: .fit)
-                .clipped()
+                .overlay {
+                    CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .background(
-                    Color(.tertiarySystemBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(project.title)
