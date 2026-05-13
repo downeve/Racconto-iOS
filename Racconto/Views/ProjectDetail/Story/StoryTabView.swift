@@ -4,16 +4,14 @@ struct StoryTabView: View {
     let project: Project
     var viewModel: StoryViewModel
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var showPreview = false
-    @State private var showSidebar = true
-    @State private var scrollToChapterId: String? = nil
+    @State private var showOutline = false
 
     var body: some View {
         Group {
             if sizeClass == .regular {
                 iPadLayout
             } else {
-                mainContent
+                iPhoneLayout
             }
         }
         .task { if viewModel.chapters.isEmpty { await viewModel.load(projectId: project.id) } }
@@ -27,117 +25,30 @@ struct StoryTabView: View {
         }
     }
 
-    // MARK: - iPad 레이아웃
+    // MARK: - iPhone
 
-    private var iPadLayout: some View {
-        HStack(spacing: 0) {
-            if showSidebar {
-                chapterSidebar
-                Divider()
-            }
-            mainContent
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { showSidebar.toggle() }
-                } label: {
-                    Image(systemName: "sidebar.left")
-                        .symbolVariant(showSidebar ? .fill : .none)
-                }
-            }
-        }
-    }
-
-    // MARK: - 챕터 사이드바 (iPad 전용)
-
-    private var chapterSidebar: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                if viewModel.chapterTree.isEmpty {
-                    Text("챕터 없음")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                } else {
-                    ForEach(Array(viewModel.chapterTree.enumerated()), id: \.element.parent.id) { idx, node in
-                        // 최상위 챕터
-                        Button {
-                            scrollToChapterId = node.parent.id
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("챕터 \(idx + 1)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                Text(node.parent.title)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(2)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-
-                        // 서브챕터
-                        ForEach(Array(node.subs.enumerated()), id: \.element.id) { subIdx, sub in
-                            Button {
-                                scrollToChapterId = sub.id
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("챕터 \(idx + 1).\(subIdx + 1)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                    Text(sub.title)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
-                                }
-                                .padding(.leading, 28)
-                                .padding(.trailing, 16)
-                                .padding(.vertical, 8)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Divider().padding(.horizontal, 12)
+    private var iPhoneLayout: some View {
+        ChapterDetailView(viewModel: viewModel, project: project)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button { showOutline = true } label: {
+                        Image(systemName: "sidebar.left")
                     }
                 }
             }
-            .padding(.vertical, 8)
-        }
-        .frame(width: 220)
-        .background(Color(.secondarySystemBackground))
+            .sheet(isPresented: $showOutline) {
+                ChapterOutlineSheet(viewModel: viewModel, project: project)
+            }
     }
 
-    // MARK: - 메인 콘텐츠 (공통)
+    // MARK: - iPad
 
-    private var mainContent: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Button(showPreview ? "편집" : "미리보기") {
-                    showPreview.toggle()
-                }
-                .font(.subheadline)
-                .padding(.trailing, 16)
-                .padding(.vertical, 8)
-            }
-            Divider()
-
-            if viewModel.isLoading && viewModel.chapters.isEmpty {
-                Spacer()
-                ProgressView()
-                Spacer()
-            } else if showPreview {
-                StoryPreviewView(viewModel: viewModel, projectId: project.id)
-            } else {
-                StoryEditorView(viewModel: viewModel, project: project, scrollToChapterId: $scrollToChapterId)
-            }
+    private var iPadLayout: some View {
+        NavigationSplitView {
+            ChapterOutlineSheet(viewModel: viewModel, project: project, showDismissButton: false)
+                .navigationSplitViewColumnWidth(min: 240, ideal: 280)
+        } detail: {
+            ChapterDetailView(viewModel: viewModel, project: project)
         }
     }
 }

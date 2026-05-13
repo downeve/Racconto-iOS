@@ -9,6 +9,14 @@ class StoryViewModel {
     private var projectId = ""
 
     var chapterTree: [ChapterNode] { ChapterTreeBuilder.buildTree(chapters) }
+    var currentChapterId: String?
+
+    var currentChapter: Chapter? {
+        if let id = currentChapterId, let ch = chapters.first(where: { $0.id == id }) {
+            return ch
+        }
+        return chapterTree.first?.parent
+    }
 
     func blocks(for chapterId: String) -> [Block] {
         groupItemsIntoBlocks(itemsByChapter[chapterId] ?? [])
@@ -26,6 +34,9 @@ class StoryViewModel {
                 for chapter in chapters {
                     group.addTask { await self.loadItems(for: chapter.id) }
                 }
+            }
+            if currentChapterId == nil {
+                currentChapterId = chapterTree.first?.parent.id
             }
         } catch let err as APIError {
             errorMessage = err.errorDescription
@@ -73,6 +84,9 @@ class StoryViewModel {
             try await api.requestVoid("/chapters/\(id)", method: "DELETE")
             chapters.removeAll { $0.id == id || $0.parentId == id }
             itemsByChapter.removeValue(forKey: id)
+            if currentChapterId == id || chapters.first(where: { $0.id == currentChapterId }) == nil {
+                currentChapterId = chapterTree.first?.parent.id
+            }
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {}
