@@ -5,7 +5,9 @@ struct StoryTabView: View {
     var viewModel: StoryViewModel
     @State private var showOutline = false
     @State private var showPreview = false
-    @State private var showInsert = false   // Phase 2
+    @State private var showInsert = false
+    @State private var showAddChapter = false
+    @State private var showAddSub = false
 
     var body: some View {
         content
@@ -22,6 +24,31 @@ struct StoryTabView: View {
             }
             .sheet(isPresented: $showOutline) {
                 ChapterOutlineSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showInsert) {
+                InsertActionSheet(isPresented: $showInsert) { kind in
+                    handleInsert(kind)
+                }
+            }
+            .sheet(isPresented: $showAddChapter) {
+                ChapterFormSheet(title: "새 챕터", confirmLabel: "생성") { title, desc in
+                    Task {
+                        await viewModel.createChapter(title: title, description: desc.isEmpty ? nil : desc)
+                        // 새로 만든 챕터를 자동 expand
+                        viewModel.expandedChapterId = viewModel.chapterTree.last?.parent.id
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddSub) {
+                ChapterFormSheet(title: "서브챕터 추가", confirmLabel: "생성") { title, desc in
+                    Task {
+                        await viewModel.createChapter(
+                            title: title,
+                            description: desc.isEmpty ? nil : desc,
+                            parentId: viewModel.expandedChapterId
+                        )
+                    }
+                }
             }
             .alert("오류", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
@@ -67,5 +94,23 @@ struct StoryTabView: View {
         }
         .padding(.trailing, 18)
         .padding(.bottom, 24)
+    }
+
+    private func handleInsert(_ kind: InsertActionSheet.InsertKind) {
+        guard let currentId = viewModel.expandedChapterId else { return }
+        switch kind {
+        case .text:
+            Task { await viewModel.addTextItem(chapterId: currentId, content: "") }
+        case .photo:
+            // Phase 2 범위 외 — 사진 탭에서 챕터로 직접 추가 가능
+            break
+        case .sideBySide:
+            // Phase 2 범위 외
+            break
+        case .chapter:
+            showAddChapter = true
+        case .subChapter:
+            showAddSub = true
+        }
     }
 }
