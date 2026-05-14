@@ -89,5 +89,7 @@ struct ChapterPickerSheet: View {
                 }
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
