@@ -10,7 +10,7 @@ class StoryViewModel {
 
     var chapterTree: [ChapterNode] { ChapterTreeBuilder.buildTree(chapters) }
 
-    @ObservationIgnored private var _expandedChapterId: String?
+    private var _expandedChapterId: String?
 
     var expandedChapterId: String? {
         get { _expandedChapterId ?? chapterTree.first?.parent.id }
