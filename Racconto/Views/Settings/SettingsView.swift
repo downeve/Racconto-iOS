@@ -8,6 +8,8 @@ struct UserSettings: Codable {
     var colorLabelYellow: String?
     var colorLabelGreen: String?
     var colorLabelBlue: String?
+    var photoSortBy: String?
+    var photoSortOrder: String?
 }
 
 struct SettingsUpdateRequest: Encodable {
@@ -57,6 +59,11 @@ struct SettingsView: View {
     @State private var usernameStatus: UsernameStatus = .idle
     @State private var usernameSaved = false
     @State private var usernameCheckTask: Task<Void, Never>? = nil
+
+    // 사진 정렬
+    @State private var photoSortBy: PhotoSortBy = .default
+    @State private var photoSortOrder: PhotoSortOrder = .asc
+    @State private var photoSortSaved = false
 
     // 비밀번호
     @State private var currentPassword = ""
@@ -164,6 +171,27 @@ struct SettingsView: View {
                     .onChange(of: isDark) { _, newVal in
                         Task { await saveTheme(dark: newVal) }
                     }
+            }
+
+            // MARK: 사진 기본 정렬
+            Section {
+                Picker("정렬 기준", selection: $photoSortBy) {
+                    ForEach(PhotoSortBy.allCases, id: \.self) { s in
+                        Text(s.label).tag(s)
+                    }
+                }
+                Picker("정렬 순서", selection: $photoSortOrder) {
+                    Text("오름차순").tag(PhotoSortOrder.asc)
+                    Text("내림차순").tag(PhotoSortOrder.desc)
+                }
+                if photoSortSaved {
+                    Text("저장됐습니다").font(.caption).foregroundStyle(.green)
+                }
+                Button("저장") {
+                    Task { await savePhotoSort() }
+                }
+            } header: {
+                Text("사진 기본 정렬")
             }
 
             // MARK: 컬러 레이블
@@ -299,6 +327,21 @@ struct SettingsView: View {
             labelYellow = settings?.colorLabelYellow ?? ""
             labelGreen  = settings?.colorLabelGreen  ?? ""
             labelBlue   = settings?.colorLabelBlue   ?? ""
+            photoSortBy    = PhotoSortBy(rawValue: settings?.photoSortBy ?? "") ?? .default
+            photoSortOrder = PhotoSortOrder(rawValue: settings?.photoSortOrder ?? "") ?? .asc
+        } catch {}
+    }
+
+    private func savePhotoSort() async {
+        do {
+            struct PhotoSortRequest: Encodable { var photoSortBy: String; var photoSortOrder: String }
+            let req = PhotoSortRequest(photoSortBy: photoSortBy.rawValue, photoSortOrder: photoSortOrder.rawValue)
+            try await api.requestVoid("/settings/batch/update", method: "PUT", body: req)
+            UserDefaults.standard.set(photoSortBy.rawValue, forKey: "photo_sort_by")
+            UserDefaults.standard.set(photoSortOrder.rawValue, forKey: "photo_sort_order")
+            photoSortSaved = true
+            try? await Task.sleep(for: .seconds(2))
+            photoSortSaved = false
         } catch {}
     }
 

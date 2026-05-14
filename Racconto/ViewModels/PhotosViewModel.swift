@@ -11,7 +11,7 @@ enum PhotoSortBy: String, CaseIterable {
     }
 }
 
-enum PhotoSortOrder { case asc, desc }
+enum PhotoSortOrder: String { case asc, desc }
 
 @Observable
 class PhotosViewModel {
@@ -21,8 +21,15 @@ class PhotosViewModel {
     var ratingFilter: Int? = nil
     var colorFilter: String? = nil
     var folderFilter: String? = nil
-    var sortBy: PhotoSortBy = .default
-    var sortOrder: PhotoSortOrder = .asc
+    var sortBy: PhotoSortBy
+    var sortOrder: PhotoSortOrder
+
+    init() {
+        let savedSortBy = UserDefaults.standard.string(forKey: "photo_sort_by")
+        sortBy = PhotoSortBy(rawValue: savedSortBy ?? "") ?? .default
+        let savedSortOrder = UserDefaults.standard.string(forKey: "photo_sort_order")
+        sortOrder = PhotoSortOrder(rawValue: savedSortOrder ?? "") ?? .asc
+    }
     var isSelecting = false
     var selectedIds: Set<String> = []
     var columns = 2
