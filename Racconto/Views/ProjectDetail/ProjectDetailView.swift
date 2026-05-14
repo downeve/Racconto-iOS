@@ -112,10 +112,19 @@ struct ProjectEditSheet: View {
         NavigationStack {
             Form {
                 Section("기본 정보") {
-                    TextField("제목", text: $title)
-                    TextField("설명", text: $description, axis: .vertical)
-                        .lineLimit(3...6)
-                    TextField("촬영 장소", text: $location)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("제목").font(.caption).foregroundStyle(.secondary)
+                        TextField("프로젝트 제목", text: $title)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("설명").font(.caption).foregroundStyle(.secondary)
+                        TextField("프로젝트 설명", text: $description, axis: .vertical)
+                            .lineLimit(3...6)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("촬영 장소").font(.caption).foregroundStyle(.secondary)
+                        TextField("장소 입력", text: $location)
+                    }
                 }
                 Section("설정") {
                     Picker("진행 상태", selection: $status) {

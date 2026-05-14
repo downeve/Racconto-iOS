@@ -72,7 +72,7 @@ struct ProjectListView: View {
                         Button(role: .destructive) {
                             deleteAlert = project
                         } label: {
-                            Label("삭제", systemImage: "trash")
+                            Text("삭제")
                         }
                     }
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -97,7 +97,7 @@ struct ProjectListView: View {
                         Button(role: .destructive) {
                             deleteAlert = project
                         } label: {
-                            Label("삭제", systemImage: "trash")
+                            Text("삭제")
                         }
                     }
                 }
