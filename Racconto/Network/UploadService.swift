@@ -57,24 +57,27 @@ class UploadService {
         }
 
         for item in items {
-            guard item.retryCount < 3 else {
-                item.status = "failed"
+            var uploaded = false
+            while !uploaded && item.retryCount < 3 {
+                item.status = "uploading"
                 try? context.save()
-                continue
+                do {
+                    try await uploadItem(item)
+                    item.status = "done"
+                    completedCount += 1
+                    uploaded = true
+                    try? FileManager.default.removeItem(atPath: item.localPath)
+                } catch {
+                    item.retryCount += 1
+                    if item.retryCount >= 3 {
+                        item.status = "failed"
+                    } else {
+                        item.status = "pending"
+                        try? await Task.sleep(for: .seconds(2))
+                    }
+                }
+                try? context.save()
             }
-            item.status = "uploading"
-            try? context.save()
-
-            do {
-                try await uploadItem(item)
-                item.status = "done"
-                completedCount += 1
-                try? FileManager.default.removeItem(atPath: item.localPath)
-            } catch {
-                item.retryCount += 1
-                item.status = "pending"
-            }
-            try? context.save()
         }
 
         let remaining = (try? context.fetch(
