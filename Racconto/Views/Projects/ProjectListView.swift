@@ -4,6 +4,7 @@ struct ProjectListView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     var viewModel: ProjectListViewModel
     var selectedProject: Binding<Project?>?
+    var onDismissSidebar: (() -> Void)? = nil
 
     @State private var showForm = false
     @State private var deleteAlert: Project? = nil
@@ -84,21 +85,36 @@ var body: some View {
         .listStyle(.plain)
         .refreshable { await viewModel.load() }
         .safeAreaInset(edge: .bottom) {
-            Button { showForm = true } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .medium))
-                    Text("새 프로젝트")
-                        .font(.subheadline)
+            HStack(spacing: 0) {
+                Button { showForm = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("새 프로젝트")
+                            .font(.subheadline)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.bar)
-                .overlay(alignment: .top) { Divider() }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
+                Spacer()
+
+                if let dismiss = onDismissSidebar {
+                    Button(action: dismiss) {
+                        Image(systemName: "sidebar.left")
+                            .font(.system(size: 15))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.accentColor)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+            .overlay(alignment: .top) { Divider() }
         }
     }
 

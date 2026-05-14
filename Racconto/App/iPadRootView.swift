@@ -33,11 +33,24 @@ struct iPadRootView: View {
 
     private var projectsTab: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            ProjectListView(viewModel: listVM, selectedProject: $selectedProject)
+            ProjectListView(viewModel: listVM, selectedProject: $selectedProject, onDismissSidebar: {
+                withAnimation { columnVisibility = .detailOnly }
+            })
         } detail: {
             if let project = selectedProject {
                 ProjectDetailView(project: project)
                     .id(project.id)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            if columnVisibility == .detailOnly {
+                                Button {
+                                    withAnimation { columnVisibility = .all }
+                                } label: {
+                                    Image(systemName: "sidebar.left")
+                                }
+                            }
+                        }
+                    }
             } else {
                 ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
             }
