@@ -168,7 +168,7 @@ struct PublicPortfolioView: View {
     }
 
     private func themeBackground(_ theme: String?) -> Color {
-        theme == "dark" ? Color.black : Color(.systemBackground)
+        theme == "dark" ? Color.black : Color(red: 0.957, green: 0.937, blue: 0.906)
     }
 
     private func themeForeground(_ theme: String?) -> Color {
@@ -191,7 +191,7 @@ struct PortfolioProjectDetailView: View {
             .padding(.bottom, 40)
         }
         .navigationTitle(project.title)
-        .background(theme == "dark" ? Color.black : Color(.systemBackground))
+        .background(theme == "dark" ? Color.black : Color(red: 0.957, green: 0.937, blue: 0.906))
         .foregroundStyle(theme == "dark" ? Color.white : Color.primary)
     }
 
