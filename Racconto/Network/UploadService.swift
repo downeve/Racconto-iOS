@@ -32,7 +32,8 @@ class UploadService {
         let resized = ImageResizer.resize(image)
         let localURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("upload_\(UUID().uuidString).jpg")
-        try? resized.write(to: localURL)
+        let writeResult = try? resized.write(to: localURL)
+        print("[UploadService] enqueue: \(filename), 파일 저장 \(writeResult == nil ? "실패" : "성공") → \(localURL.lastPathComponent)")
 
         let item = UploadQueueItem(
             localPath: localURL.path,
@@ -43,12 +44,16 @@ class UploadService {
         context.insert(item)
         try? context.save()
         pendingCount += 1
+        print("[UploadService] pendingCount=\(pendingCount), processQueue 시작")
 
         Task { await processQueue() }
     }
 
     func processQueue() async {
-        guard !isProcessing else { return }
+        guard !isProcessing else {
+            print("[UploadService] processQueue: 이미 처리 중, 건너뜀")
+            return
+        }
         isProcessing = true
         isUploading = true
         defer { isProcessing = false; isUploading = false }
@@ -57,12 +62,28 @@ class UploadService {
             predicate: #Predicate { $0.status == "pending" },
             sortBy: [SortDescriptor(\.createdAt)]
         )
-        guard let items = try? context.fetch(descriptor), !items.isEmpty else {
+        do {
+            let items = try context.fetch(descriptor)
+            print("[UploadService] pending 항목 \(items.count)개 조회됨")
+            guard !items.isEmpty else { pendingCount = 0; return }
+            await processItems(items)
+        } catch {
+            print("[UploadService] fetch 실패: \(error)")
             pendingCount = 0
             return
         }
 
+        let remaining = (try? context.fetch(
+            FetchDescriptor<UploadQueueItem>(predicate: #Predicate { $0.status == "pending" })
+        ))?.count ?? 0
+        pendingCount = remaining
+        print("[UploadService] 완료. 남은 pending=\(remaining)")
+    }
+
+    private func processItems(_ items: [UploadQueueItem]) async {
+
         for item in items {
+            print("[UploadService] 업로드 시작: \(item.originalFilename) (retryCount=\(item.retryCount))")
             var uploaded = false
             while !uploaded && item.retryCount < 3 {
                 item.status = "uploading"
@@ -72,6 +93,7 @@ class UploadService {
                     item.status = "done"
                     completedCount += 1
                     uploaded = true
+                    print("[UploadService] 업로드 성공: \(item.originalFilename)")
                     try? FileManager.default.removeItem(atPath: item.localPath)
                 } catch {
                     item.retryCount += 1
@@ -93,11 +115,6 @@ class UploadService {
                 try? context.save()
             }
         }
-
-        let remaining = (try? context.fetch(
-            FetchDescriptor<UploadQueueItem>(predicate: #Predicate { $0.status == "pending" })
-        ))?.count ?? 0
-        pendingCount = remaining
     }
 
     private func uploadItem(_ item: UploadQueueItem) async throws {
