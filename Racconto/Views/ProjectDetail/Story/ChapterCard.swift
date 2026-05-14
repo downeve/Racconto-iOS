@@ -48,7 +48,10 @@ struct ChapterCard: View {
     @State private var showAddSub = false
     @State private var draggingId: String? = nil
 
-    private var isExpanded: Bool { viewModel.expandedChapterId == chapter.id }
+    private var isExpanded: Bool {
+        viewModel.expandedChapterId == chapter.id ||
+        (viewModel.expandedChapterId == nil && viewModel.chapterTree.first?.parent.id == chapter.id)
+    }
     private var photos: [ChapterItem] {
         (viewModel.itemsByChapter[chapter.id] ?? []).filter { $0.itemType == .photo }
     }

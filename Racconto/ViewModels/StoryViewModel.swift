@@ -10,16 +10,11 @@ class StoryViewModel {
 
     var chapterTree: [ChapterNode] { ChapterTreeBuilder.buildTree(chapters) }
 
-    private var _expandedChapterId: String?
-
-    var expandedChapterId: String? {
-        get { _expandedChapterId ?? chapterTree.first?.parent.id }
-        set { _expandedChapterId = newValue }
-    }
+    var expandedChapterId: String? = nil
 
     func toggleExpanded(_ chapterId: String) {
-        if _expandedChapterId == chapterId { return }
-        _expandedChapterId = chapterId
+        if expandedChapterId == chapterId { return }
+        expandedChapterId = chapterId
     }
 
     func blocks(for chapterId: String) -> [Block] {
@@ -39,7 +34,7 @@ class StoryViewModel {
                     group.addTask { await self.loadItems(for: chapter.id) }
                 }
             }
-            _expandedChapterId = chapterTree.first?.parent.id
+            expandedChapterId = chapterTree.first?.parent.id
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {}
@@ -86,8 +81,8 @@ class StoryViewModel {
             try await api.requestVoid("/chapters/\(id)", method: "DELETE")
             chapters.removeAll { $0.id == id || $0.parentId == id }
             itemsByChapter.removeValue(forKey: id)
-            if _expandedChapterId == id || chapters.first(where: { $0.id == _expandedChapterId }) == nil {
-                _expandedChapterId = chapterTree.first?.parent.id
+            if expandedChapterId == id || chapters.first(where: { $0.id == expandedChapterId }) == nil {
+                expandedChapterId = chapterTree.first?.parent.id
             }
         } catch let err as APIError {
             errorMessage = err.errorDescription
