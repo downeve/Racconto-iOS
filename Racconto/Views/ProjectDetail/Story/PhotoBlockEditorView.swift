@@ -34,6 +34,8 @@ struct PhotoBlockEditorView: View {
     @State private var showMoveSheet = false
     @State private var movingItem: ChapterItem?
     @State private var draggingItemId: String?
+    @State private var selectedIds: Set<String> = []
+    @State private var isEditorSelecting = false
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -54,9 +56,9 @@ struct PhotoBlockEditorView: View {
                         Task { await viewModel.changeBlockLayout(chapterId: chapterId, blockId: block.id, layout: layout) }
                     }
                 )) {
-                    Text("그리드").tag(ChapterItem.BlockLayout.grid)
-                    Text("와이드").tag(ChapterItem.BlockLayout.wide)
-                    Text("싱글").tag(ChapterItem.BlockLayout.single)
+                    Label("그리드", systemImage: "square.grid.3x3").tag(ChapterItem.BlockLayout.grid)
+                    Label("와이드", systemImage: "rectangle.grid.1x2").tag(ChapterItem.BlockLayout.wide)
+                    Label("싱글", systemImage: "rectangle").tag(ChapterItem.BlockLayout.single)
                 }
                 .pickerStyle(.segmented)
                 .padding()
@@ -77,11 +79,31 @@ struct PhotoBlockEditorView: View {
                     Task { await viewModel.reorderBlock(chapterId: chapterId, blockId: block.id, itemIds: ids) }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if isEditorSelecting && !selectedIds.isEmpty {
+                    editorBottomToolbar
+                }
+            }
             .navigationTitle("블록 편집")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    if isEditorSelecting {
+                        Button("취소") {
+                            isEditorSelecting = false
+                            selectedIds = []
+                        }
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("완료") { dismiss() }
+                    if isEditorSelecting {
+                        Button("완료") {
+                            isEditorSelecting = false
+                            selectedIds = []
+                        }
+                    } else {
+                        Button("완료") { dismiss() }
+                    }
                 }
             }
             .sheet(isPresented: $showMoveSheet) {
@@ -97,6 +119,66 @@ struct PhotoBlockEditorView: View {
         }
     }
 
+    // MARK: - Bottom Toolbar
+
+    private var editorBottomToolbar: some View {
+        HStack(spacing: 0) {
+            toolbarBtn("그리드", systemImage: "square.grid.3x3") {
+                Task { await viewModel.changeBlockLayout(chapterId: chapterId, blockId: block.id, layout: .grid) }
+            }
+            toolbarBtn("와이드", systemImage: "rectangle.grid.1x2") {
+                Task { await viewModel.changeBlockLayout(chapterId: chapterId, blockId: block.id, layout: .wide) }
+            }
+            toolbarBtn("싱글", systemImage: "rectangle") {
+                Task { await viewModel.changeBlockLayout(chapterId: chapterId, blockId: block.id, layout: .single) }
+            }
+            Divider().frame(height: 28)
+            toolbarBtn("이동", systemImage: "arrow.right.square") {
+                if let first = photos.first(where: { selectedIds.contains($0.id) }) {
+                    movingItem = first
+                    showMoveSheet = true
+                }
+            }
+            toolbarBtn("삭제", systemImage: "trash", role: .destructive) {
+                let toDelete = selectedIds
+                Task {
+                    for id in toDelete {
+                        await viewModel.deleteItem(chapterId: chapterId, itemId: id)
+                    }
+                    photos.removeAll { toDelete.contains($0.id) }
+                    selectedIds = []
+                    isEditorSelecting = false
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(.regularMaterial)
+        .overlay(alignment: .top) { Divider() }
+    }
+
+    @ViewBuilder
+    private func toolbarBtn(
+        _ label: String,
+        systemImage: String,
+        role: ButtonRole? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(role: role, action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18))
+                Text(label)
+                    .font(.system(size: 10))
+            }
+            .foregroundStyle(role == .destructive ? .red : .primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Photo Cell
+
     @ViewBuilder
     private func photoCell(_ item: ChapterItem) -> some View {
         Color.clear
@@ -106,12 +188,25 @@ struct PhotoBlockEditorView: View {
             }
             .clipped()
             .opacity(draggingItemId == item.id ? 0.4 : 1)
+            .selectionOverlay(isSelected: selectedIds.contains(item.id), isSelecting: isEditorSelecting)
+            .onTapGesture {
+                if isEditorSelecting {
+                    if selectedIds.contains(item.id) { selectedIds.remove(item.id) }
+                    else { selectedIds.insert(item.id) }
+                }
+            }
             .contextMenu {
+                Button {
+                    isEditorSelecting = true
+                    selectedIds.insert(item.id)
+                } label: {
+                    Label("선택", systemImage: "checkmark.circle")
+                }
                 Button {
                     isSelecting = true
                     dismiss()
                 } label: {
-                    Label("선택 모드", systemImage: "checkmark.circle")
+                    Label("스토리 선택 모드", systemImage: "photo.stack")
                 }
                 Divider()
                 Button {

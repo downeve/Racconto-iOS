@@ -8,20 +8,50 @@ struct SideBySideBlockView: View {
     let chapterId: String
     var viewModel: StoryViewModel
     @State private var showTextEditor = false
+    @State private var position: String
+
+    init(block: Block, chapterId: String, viewModel: StoryViewModel) {
+        self.block = block
+        self.chapterId = chapterId
+        self.viewModel = viewModel
+        _position = State(initialValue: block.blockType == "side-right" ? "side-right" : "side-left")
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if sizeClass == .regular {
-                    HStack(alignment: .top, spacing: 16) {
-                        sideContent
+            VStack(spacing: 0) {
+                Picker("텍스트 위치", selection: $position) {
+                    Label("텍스트 왼쪽", systemImage: "text.alignleft").tag("side-left")
+                    Label("텍스트 오른쪽", systemImage: "text.alignright").tag("side-right")
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .onChange(of: position) { _, newPosition in
+                    guard let textItem = block.textItem else { return }
+                    Task {
+                        await viewModel.setSideBySide(
+                            chapterId: chapterId,
+                            textItemId: textItem.id,
+                            photoBlockId: block.id,
+                            position: newPosition
+                        )
                     }
-                    .padding()
-                } else {
-                    VStack(alignment: .leading, spacing: 12) {
-                        sideContent
+                }
+
+                Divider()
+
+                ScrollView {
+                    if sizeClass == .regular {
+                        HStack(alignment: .top, spacing: 16) {
+                            sideContent
+                        }
+                        .padding()
+                    } else {
+                        VStack(alignment: .leading, spacing: 12) {
+                            sideContent
+                        }
+                        .padding()
                     }
-                    .padding()
                 }
             }
             .navigationTitle("Side-by-Side 편집")
@@ -39,7 +69,7 @@ struct SideBySideBlockView: View {
 
     @ViewBuilder
     private var sideContent: some View {
-        let isTextLeft = block.blockType == "side-left"
+        let isTextLeft = position == "side-left"
         if isTextLeft {
             textSection
             photosSection
