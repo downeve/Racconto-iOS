@@ -8,6 +8,14 @@ struct PublicPortfolioView: View {
     @State private var meLoaded = false
     @State private var meLoading = false
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.colorScheme) private var colorScheme
+
+    // 웹 bg-canvas(크림) / bg-d-bg(다크) 와 동일한 시스템 연동 배경색
+    private var portfolioBg: Color {
+        colorScheme == .dark
+            ? Color(.systemBackground)
+            : Color(red: 0.957, green: 0.937, blue: 0.906)
+    }
 
     var body: some View {
         content
@@ -103,7 +111,7 @@ struct PublicPortfolioView: View {
                     LazyVStack(alignment: .leading, spacing: 32) {
                         ForEach(portfolio.projects) { project in
                             NavigationLink {
-                                PortfolioProjectDetailView(project: project, theme: portfolio.theme)
+                                PortfolioProjectDetailView(project: project)
                             } label: {
                                 portfolioProjectCard(project)
                             }
@@ -115,7 +123,7 @@ struct PublicPortfolioView: View {
                     LazyVGrid(columns: gridCols, spacing: 24) {
                         ForEach(portfolio.projects) { project in
                             NavigationLink {
-                                PortfolioProjectDetailView(project: project, theme: portfolio.theme)
+                                PortfolioProjectDetailView(project: project)
                             } label: {
                                 portfolioProjectCard(project)
                             }
@@ -125,15 +133,13 @@ struct PublicPortfolioView: View {
                     .padding()
                 }
             }
-            .background(themeBackground(portfolio.theme))
-            .foregroundStyle(themeForeground(portfolio.theme))
+            .background(portfolioBg)
         }
     }
 
     @ViewBuilder
     private func portfolioProjectCard(_ project: PortfolioProject) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            // 커버 이미지 — 항상 고정 높이 (없으면 placeholder)
             Group {
                 if let coverUrl = project.coverImageUrl {
                     CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
@@ -150,8 +156,8 @@ struct PublicPortfolioView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
                 .lineLimit(1)
+                .foregroundStyle(.primary)
 
-            // 설명 — 항상 2줄 높이 확보
             Text(project.description ?? "")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -167,19 +173,17 @@ struct PublicPortfolioView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(.bottom, 8)
     }
-
-    private func themeBackground(_ theme: String?) -> Color {
-        theme == "dark" ? Color.black : Color(red: 0.957, green: 0.937, blue: 0.906)
-    }
-
-    private func themeForeground(_ theme: String?) -> Color {
-        theme == "dark" ? Color.white : Color(red: 0.12, green: 0.12, blue: 0.12)
-    }
 }
 
 struct PortfolioProjectDetailView: View {
     let project: PortfolioProject
-    let theme: String?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var portfolioBg: Color {
+        colorScheme == .dark
+            ? Color(.systemBackground)
+            : Color(red: 0.957, green: 0.937, blue: 0.906)
+    }
 
     var body: some View {
         ScrollView {
@@ -192,8 +196,8 @@ struct PortfolioProjectDetailView: View {
             .padding(.bottom, 40)
         }
         .navigationTitle(project.title)
-        .background(theme == "dark" ? Color.black : Color(red: 0.957, green: 0.937, blue: 0.906))
-        .foregroundStyle(theme == "dark" ? Color.white : Color(red: 0.12, green: 0.12, blue: 0.12))
+        .background(portfolioBg)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 
     @ViewBuilder
