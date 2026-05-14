@@ -12,6 +12,7 @@ struct LightboxView: View {
     @State private var currentIndex: Int
     @State private var showEXIF = false
     @State private var showChapterPicker = false
+    @State private var showControls = true
 
     init(
         photos: [Photo],
@@ -39,51 +40,61 @@ struct LightboxView: View {
 
             VStack(spacing: 0) {
                 // 상단 바
-                HStack {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.title3)
+                if showControls {
+                    HStack {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                                .font(.title3)
+                                .foregroundStyle(.white)
+                                .frame(width: 36, height: 36)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                        Text("\(currentIndex + 1) / \(photos.count)")
+                            .font(.subheadline)
                             .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
+                        Spacer()
+                        Color.clear.frame(width: 36, height: 36)
                     }
-                    Spacer()
-                    Text("\(currentIndex + 1) / \(photos.count)")
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Color.clear.frame(width: 36, height: 36)
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 12)
 
-                // 사진 영역 — 하단 바 위까지만 차지
+                // 사진 영역
                 TabView(selection: $currentIndex) {
                     ForEach(Array(photos.enumerated()), id: \.element.id) { idx, photo in
-                        CachedImage(url: photo.imageUrl, variant: .public, contentMode: .fit)
-                            .tag(idx)
+                        ZoomablePhotoView(url: photo.imageUrl) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showControls.toggle()
+                            }
+                        }
+                        .tag(idx)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
                 // EXIF 패널
-                if showEXIF, let photo = currentPhoto {
+                if showControls && showEXIF, let photo = currentPhoto {
                     EXIFPanel(photo: photo)
-                        .transition(.move(edge: .bottom))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
                 // 하단 바
-                if let photo = currentPhoto {
+                if showControls, let photo = currentPhoto {
                     if isTrashMode {
                         trashBar(photo: photo)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else if viewModel != nil {
                         editBar(photo: photo)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showEXIF)
+        .animation(.easeInOut(duration: 0.2), value: showControls)
     }
 
     // MARK: - 일반 편집 바
@@ -197,6 +208,43 @@ struct LightboxView: View {
         }
     }
 }
+
+// MARK: - ZoomablePhotoView
+
+private struct ZoomablePhotoView: View {
+    let url: String
+    let onSingleTap: () -> Void
+
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+
+    var body: some View {
+        CachedImage(url: url, variant: .public, contentMode: .fit)
+            .scaleEffect(scale)
+            .gesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        scale = max(1.0, lastScale * value)
+                    }
+                    .onEnded { _ in
+                        lastScale = scale
+                        if scale < 1.05 {
+                            withAnimation(.spring(duration: 0.3)) { scale = 1.0 }
+                            lastScale = 1.0
+                        }
+                    }
+            )
+            .onTapGesture(count: 2) {
+                withAnimation(.spring(duration: 0.3)) { scale = 1.0 }
+                lastScale = 1.0
+            }
+            .onTapGesture(count: 1) {
+                onSingleTap()
+            }
+    }
+}
+
+// MARK: - EXIFPanel
 
 struct EXIFPanel: View {
     let photo: Photo
