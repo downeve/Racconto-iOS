@@ -30,6 +30,7 @@ struct PublicPortfolioView: View {
             portfolioContent(portfolio)
                 .navigationTitle(submittedUsername)
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(.visible, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("다른 사용자") {
