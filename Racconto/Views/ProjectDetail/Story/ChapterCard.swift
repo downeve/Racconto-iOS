@@ -139,6 +139,7 @@ struct ChapterCard: View {
                     .padding(.horizontal, 18)
                     .padding(.bottom, 12)
             }
+            Divider()
             ForEach(viewModel.blocks(for: chapter.id)) { block in
                 BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel, isSelecting: $isSelecting, selectedItemIds: $selectedItemIds)
                     .opacity(draggingId == block.id ? 0.4 : 1.0)

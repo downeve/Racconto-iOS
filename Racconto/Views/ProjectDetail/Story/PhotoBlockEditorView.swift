@@ -29,6 +29,7 @@ struct PhotoBlockEditorView: View {
     let block: Block
     let chapterId: String
     var viewModel: StoryViewModel
+    @Binding var isSelecting: Bool
     @State private var photos: [ChapterItem]
     @State private var showMoveSheet = false
     @State private var movingItem: ChapterItem?
@@ -36,10 +37,11 @@ struct PhotoBlockEditorView: View {
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
-    init(block: Block, chapterId: String, viewModel: StoryViewModel) {
+    init(block: Block, chapterId: String, viewModel: StoryViewModel, isSelecting: Binding<Bool>) {
         self.block = block
         self.chapterId = chapterId
         self.viewModel = viewModel
+        self._isSelecting = isSelecting
         _photos = State(initialValue: block.photoItems)
     }
 
@@ -105,6 +107,13 @@ struct PhotoBlockEditorView: View {
             .clipped()
             .opacity(draggingItemId == item.id ? 0.4 : 1)
             .contextMenu {
+                Button {
+                    isSelecting = true
+                    dismiss()
+                } label: {
+                    Label("선택 모드", systemImage: "checkmark.circle")
+                }
+                Divider()
                 Button {
                     movingItem = item
                     showMoveSheet = true
