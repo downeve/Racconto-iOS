@@ -19,6 +19,7 @@ class UploadService {
     var pendingCount = 0
     var isUploading = false
     var completedCount = 0
+    var lastErrorMessage: String? = nil
 
     private var isProcessing = false
     private let api = RaccontoAPI.shared
@@ -74,6 +75,14 @@ class UploadService {
                     try? FileManager.default.removeItem(atPath: item.localPath)
                 } catch {
                     item.retryCount += 1
+                    let desc: String
+                    switch error {
+                    case let apiErr as APIError: desc = apiErr.errorDescription ?? error.localizedDescription
+                    case let urlErr as URLError: desc = "네트워크 오류 (\(urlErr.code.rawValue))"
+                    default: desc = error.localizedDescription
+                    }
+                    lastErrorMessage = "[\(item.originalFilename ?? "파일")] \(desc)"
+                    print("[UploadService] 실패 (시도 \(item.retryCount)/3): \(desc)")
                     if item.retryCount >= 3 {
                         item.status = "failed"
                     } else {

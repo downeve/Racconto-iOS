@@ -48,7 +48,8 @@ struct PhotosTabView: View {
                     UploadProgressView(
                         pendingCount: UploadService.shared.pendingCount,
                         isUploading: UploadService.shared.isUploading,
-                        hasFailed: UploadService.shared.hasFailedItems
+                        hasFailed: UploadService.shared.hasFailedItems,
+                        errorMessage: UploadService.shared.lastErrorMessage
                     )
                 }
 
