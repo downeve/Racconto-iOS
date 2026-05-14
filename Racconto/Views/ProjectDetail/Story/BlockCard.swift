@@ -1,9 +1,41 @@
 import SwiftUI
 
+// MARK: - Selection Overlay
+
+extension View {
+    func selectionOverlay(isSelected: Bool, isSelecting: Bool) -> some View {
+        self
+            .overlay(alignment: .topTrailing) {
+                if isSelecting {
+                    ZStack {
+                        Circle()
+                            .fill(isSelected ? Color.accentColor : Color.black.opacity(0.25))
+                            .frame(width: 22, height: 22)
+                            .overlay(Circle().stroke(.white, lineWidth: isSelected ? 0 : 1.5))
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .heavy))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .padding(6)
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2.5)
+            )
+    }
+}
+
+// MARK: - BlockCard
+
 struct BlockCard: View {
     let block: Block
     let chapterId: String
     var viewModel: StoryViewModel
+    @Binding var isSelecting: Bool
+    @Binding var selectedItemIds: Set<String>
     @State private var showEditor = false
     @State private var showSideBySideSetup = false
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -29,7 +61,7 @@ struct BlockCard: View {
                 }
             }
 
-            // Content preview — 이 영역 탭 시 편집 화면 열기
+            // Content preview
             Group {
                 if block.isSideBySide {
                     sideBySidePreview
@@ -43,7 +75,9 @@ struct BlockCard: View {
                 }
             }
             .contentShape(Rectangle())
-            .onTapGesture { showEditor = true }
+            .onTapGesture {
+                if !isSelecting { showEditor = true }
+            }
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
@@ -150,6 +184,19 @@ struct BlockCard: View {
                     .frame(maxWidth: .infinity)
                     .clipped()
                     .cornerRadius(4)
+                    .selectionOverlay(
+                        isSelected: selectedItemIds.contains(item.id),
+                        isSelecting: isSelecting
+                    )
+                    .onTapGesture {
+                        if isSelecting {
+                            if selectedItemIds.contains(item.id) {
+                                selectedItemIds.remove(item.id)
+                            } else {
+                                selectedItemIds.insert(item.id)
+                            }
+                        }
+                    }
             }
             if remaining > 0 {
                 ZStack {

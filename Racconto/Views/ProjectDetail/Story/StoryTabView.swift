@@ -8,18 +8,41 @@ struct StoryTabView: View {
     @State private var showInsert = false
     @State private var showAddChapter = false
     @State private var showAddSub = false
+    @State private var isSelecting = false
+    @State private var selectedItemIds: Set<String> = []
+    @State private var showDeleteConfirm = false
+    @State private var showLayoutAlert = false
+    @State private var showAttachAlert = false
 
     var body: some View {
         content
             .task { if viewModel.chapters.isEmpty { await viewModel.load(projectId: project.id) } }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showOutline = true } label: {
-                        Image(systemName: "list.bullet")
+                    if !isSelecting {
+                        Button { showOutline = true } label: {
+                            Image(systemName: "list.bullet")
+                        }
+                    }
+                }
+                ToolbarItem(placement: .principal) {
+                    if isSelecting {
+                        Text(selectedItemIds.isEmpty ? "항목 선택" : "\(selectedItemIds.count)개 선택")
+                            .font(.headline)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(showPreview ? "편집" : "미리보기") { showPreview.toggle() }
+                    if isSelecting {
+                        Button("취소") {
+                            isSelecting = false
+                            selectedItemIds.removeAll()
+                        }
+                    } else {
+                        HStack(spacing: 16) {
+                            Button("선택") { isSelecting = true }
+                            Button(showPreview ? "편집" : "미리보기") { showPreview.toggle() }
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $showOutline) {
@@ -73,10 +96,54 @@ struct StoryTabView: View {
             } else if showPreview {
                 StoryPreviewView(viewModel: viewModel, projectId: project.id)
             } else {
-                ChapterStackView(viewModel: viewModel, project: project)
+                ChapterStackView(
+                    viewModel: viewModel,
+                    project: project,
+                    isSelecting: $isSelecting,
+                    selectedItemIds: $selectedItemIds
+                )
             }
 
-            if !showPreview { fab }
+            if !showPreview && !isSelecting { fab }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if isSelecting && !selectedItemIds.isEmpty {
+                SelectModeBar(
+                    count: selectedItemIds.count,
+                    onMove: { },
+                    onLayout: { showLayoutAlert = true },
+                    onAttach: { showAttachAlert = true },
+                    onDelete: { showDeleteConfirm = true }
+                )
+            }
+        }
+        .confirmationDialog(
+            "\(selectedItemIds.count)개 사진을 삭제하시겠습니까?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) {
+                let ids = selectedItemIds
+                selectedItemIds.removeAll()
+                isSelecting = false
+                Task {
+                    guard let chapterId = viewModel.expandedChapterId else { return }
+                    for id in ids {
+                        await viewModel.deleteItem(chapterId: chapterId, itemId: id)
+                    }
+                }
+            }
+            Button("취소", role: .cancel) { }
+        }
+        .alert("레이아웃 변경", isPresented: $showLayoutAlert) {
+            Button("취소", role: .cancel) { }
+        } message: {
+            Text("블록 에디터에서 레이아웃을 변경하세요.")
+        }
+        .alert("나란히 배치", isPresented: $showAttachAlert) {
+            Button("취소", role: .cancel) { }
+        } message: {
+            Text("블록 에디터에서 나란히 배치를 설정하세요.")
         }
     }
 

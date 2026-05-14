@@ -3,6 +3,8 @@ import SwiftUI
 struct ChapterStackView: View {
     var viewModel: StoryViewModel
     let project: Project
+    @Binding var isSelecting: Bool
+    @Binding var selectedItemIds: Set<String>
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -15,7 +17,9 @@ struct ChapterStackView: View {
                             label: "\(topIdx + 1)",
                             isSub: false,
                             viewModel: viewModel,
-                            project: project
+                            project: project,
+                            isSelecting: $isSelecting,
+                            selectedItemIds: $selectedItemIds
                         )
                         .id(node.parent.id)
                         ForEach(Array(node.subs.enumerated()), id: \.element.id) { subIdx, sub in
@@ -24,7 +28,9 @@ struct ChapterStackView: View {
                                 label: "\(topIdx + 1).\(subIdx + 1)",
                                 isSub: true,
                                 viewModel: viewModel,
-                                project: project
+                                project: project,
+                                isSelecting: $isSelecting,
+                                selectedItemIds: $selectedItemIds
                             )
                             .id(sub.id)
                             .padding(.leading, 16)

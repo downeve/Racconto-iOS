@@ -43,6 +43,8 @@ struct ChapterCard: View {
     let isSub: Bool
     var viewModel: StoryViewModel
     let project: Project
+    @Binding var isSelecting: Bool
+    @Binding var selectedItemIds: Set<String>
 
     @State private var editingChapter: Chapter? = nil
     @State private var showAddSub = false
@@ -73,6 +75,10 @@ struct ChapterCard: View {
 
     private var collapsedCard: some View {
         Button {
+            if isSelecting {
+                isSelecting = false
+                selectedItemIds.removeAll()
+            }
             viewModel.toggleExpanded(chapter.id)
         } label: {
             HStack(spacing: 0) {
@@ -134,7 +140,7 @@ struct ChapterCard: View {
                     .padding(.bottom, 12)
             }
             ForEach(viewModel.blocks(for: chapter.id)) { block in
-                BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel)
+                BlockCard(block: block, chapterId: chapter.id, viewModel: viewModel, isSelecting: $isSelecting, selectedItemIds: $selectedItemIds)
                     .opacity(draggingId == block.id ? 0.4 : 1.0)
                     .padding(.vertical, 6)
                     .onDrag {
