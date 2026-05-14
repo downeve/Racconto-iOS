@@ -42,7 +42,7 @@ struct PhotoGridView: View {
             }
             .padding(.bottom, 80)
         }
-        .gesture(
+        .simultaneousGesture(
             MagnificationGesture()
                 .onChanged { value in
                     if !isGesturing {

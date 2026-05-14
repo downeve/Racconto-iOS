@@ -45,11 +45,17 @@ struct ProjectGridCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(project.title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
-                    .foregroundStyle(.primary)
+                ZStack(alignment: .topLeading) {
+                    Text("가\n가")
+                        .font(.subheadline)
+                        .hidden()
+                    Text(project.title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(2)
+                        .foregroundStyle(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 StatusBadge(status: project.status)
 
@@ -58,6 +64,10 @@ struct ProjectGridCard: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                } else {
+                    Label("placeholder", systemImage: "mappin")
+                        .font(.caption2)
+                        .hidden()
                 }
             }
             .padding(.horizontal, 2)
