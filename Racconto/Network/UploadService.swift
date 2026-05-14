@@ -32,8 +32,8 @@ class UploadService {
         let resized = ImageResizer.resize(image)
         let localURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("upload_\(UUID().uuidString).jpg")
-        let writeResult = try? resized.write(to: localURL)
-        print("[UploadService] enqueue: \(filename), 파일 저장 \(writeResult == nil ? "실패" : "성공") → \(localURL.lastPathComponent)")
+        let writeOK = (try? resized.write(to: localURL)) != nil
+        print("[UploadService] enqueue: \(filename), 파일 저장 \(writeOK ? "성공" : "실패") → \(localURL.lastPathComponent)")
 
         let item = UploadQueueItem(
             localPath: localURL.path,
