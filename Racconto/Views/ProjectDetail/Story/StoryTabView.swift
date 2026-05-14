@@ -13,6 +13,9 @@ struct StoryTabView: View {
     @State private var showDeleteConfirm = false
     @State private var showLayoutAlert = false
     @State private var showAttachAlert = false
+    @State private var showPhotoPicker = false
+    @State private var showSideBySideAlert = false
+    @State private var sideBySideBlock: Block? = nil
 
     var body: some View {
         content
@@ -72,6 +75,22 @@ struct StoryTabView: View {
                         )
                     }
                 }
+            }
+            .sheet(isPresented: $showPhotoPicker) {
+                PhotoPicker { items in
+                    guard let chapterId = viewModel.expandedChapterId else { return }
+                    Task { await viewModel.addPhotosToChapter(images: items, chapterId: chapterId) }
+                }
+            }
+            .sheet(item: $sideBySideBlock) { block in
+                if let chapterId = viewModel.expandedChapterId {
+                    SideBySideSetupSheet(block: block, chapterId: chapterId, viewModel: viewModel)
+                }
+            }
+            .alert("나란히 배치", isPresented: $showSideBySideAlert) {
+                Button("확인", role: .cancel) { }
+            } message: {
+                Text("나란히 배치하려면 사진 블록과 텍스트 블록이 모두 필요합니다. 먼저 각 블록을 추가한 뒤 블록 메뉴(···)에서 설정하세요.")
             }
             .alert("오류", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
@@ -169,11 +188,16 @@ struct StoryTabView: View {
         case .text:
             Task { await viewModel.addTextItem(chapterId: currentId, content: "") }
         case .photo:
-            // Phase 2 범위 외 — 사진 탭에서 챕터로 직접 추가 가능
-            break
+            showPhotoPicker = true
         case .sideBySide:
-            // Phase 2 범위 외
-            break
+            let blocks = viewModel.blocks(for: currentId)
+            let photoBlock = blocks.first { !$0.isSideBySide && !$0.photoItems.isEmpty }
+            let hasText = blocks.contains { !$0.isSideBySide && $0.textItem != nil }
+            if let block = photoBlock, hasText {
+                sideBySideBlock = block
+            } else {
+                showSideBySideAlert = true
+            }
         case .chapter:
             showAddChapter = true
         case .subChapter:

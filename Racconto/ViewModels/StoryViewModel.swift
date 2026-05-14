@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 @Observable
 class StoryViewModel {
@@ -129,12 +130,66 @@ class StoryViewModel {
 
     func addTextItem(chapterId: String, content: String) async {
         do {
-            let req = TextItemAddRequest(textContent: content)
+            // 서버가 빈 문자열 거부 — 공백으로 초기화 후 에디터에서 편집
+            let safeContent = content.isEmpty ? " " : content
+            let req = TextItemAddRequest(textContent: safeContent)
             let item: ChapterItem = try await api.request("/chapters/\(chapterId)/texts", method: "POST", body: req)
             itemsByChapter[chapterId, default: []].append(item)
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {}
+    }
+
+    func addPhotosToChapter(images: [(image: UIImage, data: Data, filename: String)], chapterId: String) async {
+        for item in images {
+            do {
+                let exif = EXIFExtractor.extract(from: item.data)
+                // 1. CF 업로드 URL 획득
+                let urlResp: CFUploadURLResponse = try await api.request("/photos/cf-upload-url")
+                // 2. 리사이즈 + Cloudflare 업로드
+                let imageData = ImageResizer.resize(item.image)
+                let imageUrl = try await uploadToCloudflare(data: imageData, uploadUrl: urlResp.uploadUrl, imageId: urlResp.id)
+                // 3. 사진 메타데이터 저장
+                let photoReq = PhotoMetadataRequest(
+                    projectId: projectId,
+                    imageUrl: imageUrl,
+                    originalFilename: item.filename,
+                    camera: exif.camera, lens: exif.lens,
+                    iso: exif.iso,
+                    shutterSpeed: exif.shutterSpeed, aperture: exif.aperture,
+                    focalLength: exif.focalLength,
+                    gpsLat: exif.gpsLat, gpsLng: exif.gpsLng,
+                    takenAt: exif.takenAt
+                )
+                let photo: Photo = try await api.request("/photos/", method: "POST", body: photoReq)
+                // 4. 챕터에 연결
+                struct AddReq: Encodable { let photoId: String }
+                try await api.requestVoid("/chapters/\(chapterId)/photos", method: "POST", body: AddReq(photoId: photo.id))
+                await loadItems(for: chapterId)
+            } catch let err as APIError {
+                errorMessage = err.errorDescription
+            } catch {}
+        }
+    }
+
+    private func uploadToCloudflare(data: Data, uploadUrl: String, imageId: String) async throws -> String {
+        guard let url = URL(string: uploadUrl) else { throw URLError(.badURL) }
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        var body = Data()
+        body.append("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        req.httpBody = body
+        let (_, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        let parts = uploadUrl.components(separatedBy: "/")
+        let accountHash = parts.count > 3 ? parts[3] : ""
+        return "https://imagedelivery.net/\(accountHash)/\(imageId)/public"
     }
 
     func updateTextItem(chapterId: String, itemId: String, content: String) async {
