@@ -18,12 +18,15 @@ var body: some View {
                 phoneGrid
             }
         }
-        .navigationTitle("프로젝트")
+        .navigationTitle(isSidebar ? "" : "프로젝트")
         .navigationBarTitleDisplayMode(isSidebar ? .inline : .large)
+        .toolbar(isSidebar ? .hidden : .automatic, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showForm = true } label: {
-                    Image(systemName: "plus")
+            if !isSidebar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showForm = true } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
         }
@@ -80,6 +83,23 @@ var body: some View {
         }
         .listStyle(.plain)
         .refreshable { await viewModel.load() }
+        .safeAreaInset(edge: .bottom) {
+            Button { showForm = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("새 프로젝트")
+                        .font(.subheadline)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(.bar)
+                .overlay(alignment: .top) { Divider() }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
     }
 
     // iPhone: 그리드 (2열 고정)

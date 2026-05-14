@@ -33,7 +33,6 @@ struct iPadRootView: View {
     private var projectsTab: some View {
         NavigationSplitView {
             ProjectListView(viewModel: listVM, selectedProject: $selectedProject)
-                .navigationTitle("프로젝트")
         } detail: {
             if let project = selectedProject {
                 ProjectDetailView(project: project)
