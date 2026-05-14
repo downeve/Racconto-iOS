@@ -178,7 +178,7 @@ struct SettingsView: View {
                                 Text(row.label)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 28, alignment: .leading)
+                                    .frame(width: 44, alignment: .leading)
                                 TextField("기본 이름", text: labelBinding(for: row.key))
                                     .font(.subheadline)
                             }
@@ -194,7 +194,7 @@ struct SettingsView: View {
                             Text(row.label)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                                .frame(width: 28, alignment: .leading)
+                                .frame(width: 44, alignment: .leading)
                             TextField("기본 이름", text: labelBinding(for: row.key))
                                 .font(.subheadline)
                         }
