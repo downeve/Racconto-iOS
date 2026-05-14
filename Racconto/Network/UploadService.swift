@@ -5,6 +5,11 @@ import UIKit
 struct CFUploadURLResponse: Decodable {
     let uploadUrl: String
     let id: String
+
+    enum CodingKeys: String, CodingKey {
+        case uploadUrl = "uploadURL"
+        case id
+    }
 }
 
 @Observable
