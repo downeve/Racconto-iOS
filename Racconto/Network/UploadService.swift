@@ -81,7 +81,7 @@ class UploadService {
                     case let urlErr as URLError: desc = "네트워크 오류 (\(urlErr.code.rawValue))"
                     default: desc = error.localizedDescription
                     }
-                    lastErrorMessage = "[\(item.originalFilename ?? "파일")] \(desc)"
+                    lastErrorMessage = "[\(item.originalFilename)] \(desc)"
                     print("[UploadService] 실패 (시도 \(item.retryCount)/3): \(desc)")
                     if item.retryCount >= 3 {
                         item.status = "failed"
