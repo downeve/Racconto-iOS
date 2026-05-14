@@ -38,17 +38,6 @@ struct iPadRootView: View {
             if let project = selectedProject {
                 ProjectDetailView(project: project)
                     .id(project.id)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button {
-                                withAnimation {
-                                    columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                                }
-                            } label: {
-                                Image(systemName: "sidebar.left")
-                            }
-                        }
-                    }
             } else {
                 ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
             }
