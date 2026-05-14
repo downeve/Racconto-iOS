@@ -4,14 +4,13 @@ struct ProjectListView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     var viewModel: ProjectListViewModel
     var selectedProject: Binding<Project?>?
-    var onDismissSidebar: (() -> Void)? = nil
 
     @State private var showForm = false
     @State private var deleteAlert: Project? = nil
 
     private var isSidebar: Bool { selectedProject != nil }
 
-var body: some View {
+    var body: some View {
         Group {
             if isSidebar {
                 sidebarList
@@ -19,15 +18,12 @@ var body: some View {
                 phoneGrid
             }
         }
-        .navigationTitle(isSidebar ? "" : "프로젝트")
+        .navigationTitle("프로젝트")
         .navigationBarTitleDisplayMode(isSidebar ? .inline : .large)
-        .toolbar(isSidebar ? .hidden : .automatic, for: .navigationBar)
         .toolbar {
-            if !isSidebar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showForm = true } label: {
-                        Image(systemName: "plus")
-                    }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showForm = true } label: {
+                    Image(systemName: "plus")
                 }
             }
         }
@@ -84,38 +80,6 @@ var body: some View {
         }
         .listStyle(.plain)
         .refreshable { await viewModel.load() }
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 0) {
-                Button { showForm = true } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .medium))
-                        Text("새 프로젝트")
-                            .font(.subheadline)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-
-                Spacer()
-
-                if let dismiss = onDismissSidebar {
-                    Button(action: dismiss) {
-                        Image(systemName: "sidebar.left")
-                            .font(.system(size: 15))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .background(.bar)
-            .overlay(alignment: .top) { Divider() }
-        }
     }
 
     // iPhone: 그리드 (2열 고정)

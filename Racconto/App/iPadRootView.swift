@@ -5,7 +5,6 @@ struct iPadRootView: View {
     @State private var listVM = ProjectListViewModel()
     @State private var selectedProject: Project? = nil
     @State private var selectedTab: TabItem = .projects
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     enum TabItem: Hashable {
         case projects, portfolio, trash, settings
@@ -32,25 +31,12 @@ struct iPadRootView: View {
     }
 
     private var projectsTab: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            ProjectListView(viewModel: listVM, selectedProject: $selectedProject, onDismissSidebar: {
-                withAnimation { columnVisibility = .detailOnly }
-            })
+        NavigationSplitView {
+            ProjectListView(viewModel: listVM, selectedProject: $selectedProject)
         } detail: {
             if let project = selectedProject {
                 ProjectDetailView(project: project)
                     .id(project.id)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            if columnVisibility == .detailOnly {
-                                Button {
-                                    withAnimation { columnVisibility = .all }
-                                } label: {
-                                    Image(systemName: "sidebar.left")
-                                }
-                            }
-                        }
-                    }
             } else {
                 ContentUnavailableView("프로젝트를 선택하세요", systemImage: "rectangle.stack")
             }
