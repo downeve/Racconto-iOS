@@ -19,6 +19,7 @@ var body: some View {
             }
         }
         .navigationTitle("프로젝트")
+        .navigationBarTitleDisplayMode(isSidebar ? .inline : .large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showForm = true } label: {
