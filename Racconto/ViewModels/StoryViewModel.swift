@@ -196,7 +196,11 @@ class StoryViewModel {
 
     func updateTextItem(chapterId: String, itemId: String, content: String) async {
         do {
-            let req = TextItemUpdateRequest(textContent: content)
+            // 서버가 strip 후 빈 문자열 거부(400) — addTextItem과 동일하게 U+200B로 fallback
+            let safe = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? "\u{200B}"
+                : content
+            let req = TextItemUpdateRequest(textContent: safe)
             let updated: ChapterItem = try await api.request("/chapters/\(chapterId)/texts/\(itemId)", method: "PUT", body: req)
             if var items = itemsByChapter[chapterId], let idx = items.firstIndex(where: { $0.id == itemId }) {
                 items[idx] = updated

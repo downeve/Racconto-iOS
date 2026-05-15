@@ -64,15 +64,21 @@ struct MarkdownTextEditor: UIViewRepresentable {
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
+        // IME(한글 등) 조합 중에는 attributedText 재설정 금지 — 조합이 깨져 입력 글자 사라짐
+        guard tv.markedTextRange == nil else {
+            proxy.textView = tv
+            return
+        }
         if tv.attributedText.string != text {
             let sel = tv.selectedRange
             tv.attributedText = styledString(text)
             tv.typingAttributes = Self.typingAttrs
             // 커서 위치 복원 (범위 초과 방지)
             let len = tv.attributedText.length
+            let safeLoc = min(sel.location, len)
             tv.selectedRange = NSRange(
-                location: min(sel.location, len),
-                length:   min(sel.length, max(0, len - sel.location))
+                location: safeLoc,
+                length:   min(sel.length, max(0, len - safeLoc))
             )
         }
         proxy.textView = tv

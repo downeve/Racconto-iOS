@@ -20,10 +20,36 @@ private struct ChapterMinYKey: PreferenceKey {
 
 struct PortfolioProjectDetailView: View {
     let project: PortfolioProject
+    /// init에서 1회 계산 — 라이트박스 필름스트립 범위.
+    /// computed property로 두면 매 뷰 갱신마다 UUID 새로 발급되어 Photo.id가 매번 바뀜.
+    private let allProjectPhotos: [Photo]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @State private var fontMenuOpen = false
     @State private var activeChapterIndex: Int = 0
+
+    init(project: PortfolioProject) {
+        self.project = project
+        self.allProjectPhotos = Self.collectPhotos(from: project)
+    }
+
+    private static func collectPhotos(from project: PortfolioProject) -> [Photo] {
+        var photos: [Photo] = []
+        for chapter in project.chapters {
+            for item in chapter.items ?? [] where item.itemType == "PHOTO" {
+                guard let url = item.imageUrl else { continue }
+                // id가 nil이면 url을 안정 fallback으로 사용 (UUID 금지 — 매번 바뀜)
+                photos.append(Photo(id: item.id ?? "url:\(url)", projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
+            }
+            for sub in chapter.subChapters ?? [] {
+                for item in sub.items ?? [] where item.itemType == "PHOTO" {
+                    guard let url = item.imageUrl else { continue }
+                    photos.append(Photo(id: item.id ?? "url:\(url)", projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
+                }
+            }
+        }
+        return photos
+    }
 
     private var portfolioBg: Color {
         colorScheme == .dark
@@ -42,23 +68,6 @@ struct PortfolioProjectDetailView: View {
         return Double(activeChapterIndex + 1) / Double(project.chapters.count)
     }
 
-    /// 챕터·서브챕터 순서대로 모은 전체 사진 — 라이트박스 필름스트립 범위
-    private var allProjectPhotos: [Photo] {
-        var photos: [Photo] = []
-        for chapter in project.chapters {
-            for item in chapter.items ?? [] where item.itemType == "PHOTO" {
-                guard let url = item.imageUrl else { continue }
-                photos.append(Photo(id: item.id ?? UUID().uuidString, projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
-            }
-            for sub in chapter.subChapters ?? [] {
-                for item in sub.items ?? [] where item.itemType == "PHOTO" {
-                    guard let url = item.imageUrl else { continue }
-                    photos.append(Photo(id: item.id ?? UUID().uuidString, projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
-                }
-            }
-        }
-        return photos
-    }
 
     var body: some View {
         ScrollView {

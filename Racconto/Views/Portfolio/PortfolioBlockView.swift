@@ -108,7 +108,7 @@ struct PortfolioBlockView: View {
     @ViewBuilder
     private func singleColumn(photos: [PortfolioChapterItem], block: PortfolioBlock) -> some View {
         VStack(spacing: 16) {
-            ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
+            ForEach(Array(photos.enumerated()), id: \.element.id) { idx, item in
                 VStack(alignment: .leading, spacing: 6) {
                     SingleFitPhoto(url: item.imageUrl)
                         .cornerRadius(2)
@@ -148,7 +148,7 @@ struct PortfolioBlockView: View {
     private func sideParts(block: PortfolioBlock, isTextLeft: Bool, isIPad: Bool) -> some View {
         let textColView = textCol(block: block)
         let photoColView = VStack(spacing: 4) {
-            ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
+            ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
                 CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
@@ -175,7 +175,7 @@ struct PortfolioBlockView: View {
 
     private func photoColumn(block: PortfolioBlock) -> some View {
         VStack(spacing: 4) {
-            ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
+            ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
                 SingleFitPhoto(url: item.imageUrl)
                     .cornerRadius(2)
                     .onTapGesture { openLightbox(block: block, index: idx) }
