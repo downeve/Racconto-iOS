@@ -16,6 +16,7 @@ struct StoryTabView: View {
     @State private var showPhotoPicker = false
     @State private var showSideBySideAlert = false
     @State private var sideBySideBlock: Block? = nil
+    @State private var showNewTextEditor = false
 
     var body: some View {
         content
@@ -74,6 +75,11 @@ struct StoryTabView: View {
                             parentId: viewModel.expandedChapterId
                         )
                     }
+                }
+            }
+            .sheet(isPresented: $showNewTextEditor) {
+                if let chapterId = viewModel.expandedChapterId {
+                    TextBlockEditorView(block: nil, chapterId: chapterId, viewModel: viewModel)
                 }
             }
             .sheet(isPresented: $showPhotoPicker) {
@@ -186,7 +192,7 @@ struct StoryTabView: View {
         guard let currentId = viewModel.expandedChapterId else { return }
         switch kind {
         case .text:
-            Task { await viewModel.addTextItem(chapterId: currentId, content: "") }
+            showNewTextEditor = true
         case .photo:
             showPhotoPicker = true
         case .sideBySide:

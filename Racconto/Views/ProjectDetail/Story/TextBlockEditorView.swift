@@ -102,18 +102,19 @@ struct MarkdownTextEditor: UIViewRepresentable {
 
 struct TextBlockEditorView: View {
     @Environment(\.dismiss) private var dismiss
-    let block: Block
+    /// nil이면 신규 블록 생성 모드 — 저장 시 addTextItem 호출
+    let block: Block?
     let chapterId: String
     var viewModel: StoryViewModel
     @State private var draft: String
     @State private var showPreview = false
     @State private var proxy = MarkdownEditorProxy()
 
-    init(block: Block, chapterId: String, viewModel: StoryViewModel) {
+    init(block: Block?, chapterId: String, viewModel: StoryViewModel) {
         self.block = block
         self.chapterId = chapterId
         self.viewModel = viewModel
-        _draft = State(initialValue: block.textItem?.textContent ?? "")
+        _draft = State(initialValue: block?.textItem?.textContent ?? "")
     }
 
     var body: some View {
@@ -172,7 +173,7 @@ struct TextBlockEditorView: View {
                     }
                 }
             }
-            .navigationTitle("텍스트 편집")
+            .navigationTitle(block == nil ? "텍스트 추가" : "텍스트 편집")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -181,8 +182,15 @@ struct TextBlockEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("저장") {
                         Task {
-                            if let item = block.textItem {
+                            if let block = block, let item = block.textItem {
+                                // 기존 블록 수정
                                 await viewModel.updateTextItem(chapterId: chapterId, itemId: item.id, content: draft)
+                            } else {
+                                // 신규 블록 생성 — 내용이 없으면 취소와 동일
+                                let content = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !content.isEmpty {
+                                    await viewModel.addTextItem(chapterId: chapterId, content: content)
+                                }
                             }
                             dismiss()
                         }
