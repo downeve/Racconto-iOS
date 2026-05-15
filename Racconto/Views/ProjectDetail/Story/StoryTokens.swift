@@ -32,35 +32,40 @@ enum StoryTokens {
 
 // MARK: - Markdown Preprocessing
 
-/// CommonMark 규칙상 닫는 ** 또는 * 바로 앞에 구두점(:;,.!?)이 있으면
+/// CommonMark 규칙상 닫는 ** 또는 * 바로 앞에 Unicode 구두점이 있으면
 /// right-flanking delimiter 조건 불충족 → bold/italic 미적용.
-/// 구두점을 마커 밖으로 이동해 렌더링을 강제한다.
-/// 예) **올림푸스 Mju:** → **올림푸스 Mju**:
+///
+/// 구두점을 밖으로 이동하면 (사릴) 같은 괄호 쌍 구조를 깨뜨리므로,
+/// 대신 ZWNJ(U+200C)를 닫는 마커 바로 앞에 삽입한다.
+/// ZWNJ는 구두점도 공백도 아니므로 right-flanking 조건을 충족하며,
+/// 렌더링 결과에는 전혀 보이지 않는다.
+///
+/// 예) **올림푸스 Mju:**  → **올림푸스 Mju:\u{200C}**  → **올림푸스 Mju:**
+///     **사랑의 릴레이(사릴)** → **사랑의 릴레이(사릴)\u{200C}** → **사랑의 릴레이(사릴)**
 func preprocessMarkdown(_ text: String) -> String {
-    let punctuation = "[:;,.!?]"
     var result = text
 
-    // Bold: **text구두점** → **text**구두점
+    // Bold: (**...구두점**) → (**...구두점\u{200C}**)
     if let boldPattern = try? NSRegularExpression(
-        pattern: "\\*\\*(.+?)(\(punctuation)+)\\*\\*",
+        pattern: "(\\*\\*.+?)(\\p{P})(\\*\\*)",
         options: [.dotMatchesLineSeparators]
     ) {
         result = boldPattern.stringByReplacingMatches(
             in: result,
             range: NSRange(result.startIndex..., in: result),
-            withTemplate: "**$1**$2"
+            withTemplate: "$1$2\u{200C}$3"
         )
     }
 
-    // Italic: *text구두점* → *text*구두점 (** 는 제외)
+    // Italic: (*...구두점*) → (*...구두점\u{200C}*)  단, ** 는 제외
     if let italicPattern = try? NSRegularExpression(
-        pattern: "(?<!\\*)\\*(?!\\*)(.+?)(\(punctuation)+)\\*(?!\\*)",
+        pattern: "(?<!\\*)\\*((?!\\*).+?)(\\p{P})\\*(?!\\*)",
         options: [.dotMatchesLineSeparators]
     ) {
         result = italicPattern.stringByReplacingMatches(
             in: result,
             range: NSRange(result.startIndex..., in: result),
-            withTemplate: "*$1*$2"
+            withTemplate: "*$1$2\u{200C}*"
         )
     }
 
