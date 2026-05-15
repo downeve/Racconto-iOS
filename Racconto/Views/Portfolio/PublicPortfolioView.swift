@@ -148,13 +148,13 @@ struct PublicPortfolioView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 200)
+            .aspectRatio(4.0 / 5.0, contentMode: .fill)
             .clipped()
-            .cornerRadius(8)
+            .cornerRadius(2)
 
             Text(project.title)
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(.custom("Georgia", size: 18))
+                .fontWeight(.regular)
                 .lineLimit(1)
                 .foregroundStyle(.primary)
 
@@ -175,68 +175,3 @@ struct PublicPortfolioView: View {
     }
 }
 
-struct PortfolioProjectDetailView: View {
-    let project: PortfolioProject
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var portfolioBg: Color {
-        colorScheme == .dark
-            ? Color(.systemBackground)
-            : Color(red: 0.957, green: 0.937, blue: 0.906)
-    }
-
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 32) {
-                ForEach(Array(project.chapters.enumerated()), id: \.element.id) { idx, chapter in
-                    chapterSection(chapter, chapterIndex: idx + 1)
-                }
-            }
-            .padding()
-            .padding(.bottom, 40)
-        }
-        .navigationTitle(project.title)
-        .background(portfolioBg)
-        .toolbarBackground(.visible, for: .navigationBar)
-    }
-
-    @ViewBuilder
-    private func chapterSection(_ chapter: PortfolioChapter, chapterIndex: Int) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("챕터 \(chapterIndex)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(chapter.title)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                if let desc = chapter.description, !desc.isEmpty {
-                    Text(desc)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            PortfolioBlockView(items: chapter.items ?? [])
-            ForEach(Array((chapter.subChapters ?? []).enumerated()), id: \.element.id) { subIdx, sub in
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("챕터 \(chapterIndex).\(subIdx + 1)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(sub.title)
-                            .font(.title3)
-                            .fontWeight(.medium)
-                        if let desc = sub.description, !desc.isEmpty {
-                            Text(desc)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    PortfolioBlockView(items: sub.items ?? [])
-                }
-                .padding(.leading, 8)
-            }
-        }
-        Divider()
-    }
-}

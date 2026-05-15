@@ -82,23 +82,41 @@ struct PortfolioBlockView: View {
     @ViewBuilder
     private func photoBlock(_ block: PortfolioBlock) -> some View {
         let photos = block.photoItems
-        if block.blockLayout == "single" || block.blockLayout == nil && photos.count == 1 {
-            VStack(spacing: 4) {
-                ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
+        if sizeClass == .regular {
+            // iPad: 기존 cols 로직 유지
+            if block.blockLayout == "single" || (block.blockLayout == nil && photos.count == 1) {
+                singleColumn(photos: photos, block: block)
+            } else {
+                let cols = block.blockLayout == "wide" ? 2 : 4
+                PortfolioJustifiedPhotoGrid(
+                    items: photos,
+                    cols: cols,
+                    gap: 4,
+                    containerWidth: contentWidth,
+                    onTap: { openLightbox(block: block, index: $0) }
+                )
+            }
+        } else {
+            // iPhone: 항상 1열 풀폭 (옵션 A)
+            singleColumn(photos: photos, block: block)
+        }
+    }
+
+    @ViewBuilder
+    private func singleColumn(photos: [PortfolioChapterItem], block: PortfolioBlock) -> some View {
+        VStack(spacing: 4) {
+            ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
+                VStack(alignment: .leading, spacing: 6) {
                     SingleFitPhoto(url: item.imageUrl)
                         .cornerRadius(2)
                         .onTapGesture { openLightbox(block: block, index: idx) }
+                    if let cap = item.caption, !cap.isEmpty {
+                        Text(cap)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-        } else {
-            let cols = block.blockLayout == "wide" ? 2 : (sizeClass == .regular ? 4 : 3)
-            PortfolioJustifiedPhotoGrid(
-                items: photos,
-                cols: cols,
-                gap: 4,
-                containerWidth: contentWidth,
-                onTap: { openLightbox(block: block, index: $0) }
-            )
         }
     }
 
@@ -110,15 +128,23 @@ struct PortfolioBlockView: View {
                 sideParts(block: block, isTextLeft: isTextLeft, isIPad: true)
             }
         } else {
-            VStack(alignment: .leading, spacing: 12) {
-                sideParts(block: block, isTextLeft: isTextLeft, isIPad: false)
+            // iPhone: block_type 의미 보존 — side-left: 텍스트 위, 사진 아래 / side-right: 사진 위, 텍스트 아래
+            VStack(alignment: .leading, spacing: 16) {
+                if isTextLeft {
+                    textCol(block: block)
+                    photoColumn(block: block)
+                } else {
+                    photoColumn(block: block)
+                    textCol(block: block)
+                }
             }
         }
     }
 
     @ViewBuilder
     private func sideParts(block: PortfolioBlock, isTextLeft: Bool, isIPad: Bool) -> some View {
-        let photoCol = Group {
+        let textColView = textCol(block: block)
+        let photoColView = VStack(spacing: 4) {
             ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
                 CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
                     .frame(maxWidth: .infinity)
@@ -128,16 +154,29 @@ struct PortfolioBlockView: View {
                     .onTapGesture { openLightbox(block: block, index: idx) }
             }
         }
-        let textCol = Markdown(block.textItem?.textContent ?? "")
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
 
         if isTextLeft {
-            VStack { textCol }
-            VStack { photoCol }
+            textColView
+            photoColView
         } else {
-            VStack { photoCol }
-            VStack { textCol }
-                .padding(.leading, isIPad ? 24 : 0)
+            photoColView
+            textColView
+        }
+    }
+
+    private func textCol(block: PortfolioBlock) -> some View {
+        Markdown(block.textItem?.textContent ?? "")
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func photoColumn(block: PortfolioBlock) -> some View {
+        VStack(spacing: 4) {
+            ForEach(Array(block.photoItems.enumerated()), id: \.offset) { idx, item in
+                SingleFitPhoto(url: item.imageUrl)
+                    .cornerRadius(2)
+                    .onTapGesture { openLightbox(block: block, index: idx) }
+            }
         }
     }
 
