@@ -104,7 +104,7 @@ struct PortfolioBlockView: View {
 
     @ViewBuilder
     private func singleColumn(photos: [PortfolioChapterItem], block: PortfolioBlock) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 16) {
             ForEach(Array(photos.enumerated()), id: \.offset) { idx, item in
                 VStack(alignment: .leading, spacing: 6) {
                     SingleFitPhoto(url: item.imageUrl)
