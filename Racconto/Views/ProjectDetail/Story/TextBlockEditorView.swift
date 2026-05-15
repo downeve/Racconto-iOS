@@ -42,7 +42,7 @@ struct MarkdownTextEditor: UIViewRepresentable {
     }()
 
     private static var typingAttrs: [NSAttributedString.Key: Any] {
-        [.font: editorFont, .paragraphStyle: paragraphStyle]
+        [.font: editorFont, .paragraphStyle: paragraphStyle, .foregroundColor: UIColor.label]
     }
 
     private func styledString(_ raw: String) -> NSAttributedString {

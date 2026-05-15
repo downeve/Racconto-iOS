@@ -140,17 +140,17 @@ struct PublicPortfolioView: View {
     @ViewBuilder
     private func portfolioProjectCard(_ project: PortfolioProject) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let coverUrl = project.coverImageUrl {
-                    CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
-                } else {
-                    Color(.secondarySystemBackground)
+            Color.clear
+                .aspectRatio(4.0 / 5.0, contentMode: .fit)
+                .overlay {
+                    if let coverUrl = project.coverImageUrl {
+                        CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
+                    } else {
+                        Color(.secondarySystemBackground)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(4.0 / 5.0, contentMode: .fit)
-            .clipped()
-            .cornerRadius(2)
+                .clipped()
+                .cornerRadius(2)
 
             Text(project.title)
                 .font(.custom("Georgia", size: 18))
