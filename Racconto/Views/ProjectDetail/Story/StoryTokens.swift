@@ -46,8 +46,9 @@ func preprocessMarkdown(_ text: String) -> String {
     var result = text
 
     // Bold: (**...구두점**) → (**...구두점\u{200C}**)
+    // [^*]+? : 내용에 * 포함 금지 — 인접 bold/italic 마커를 넘나드는 매칭 방지
     if let boldPattern = try? NSRegularExpression(
-        pattern: "(\\*\\*.+?)(\\p{P})(\\*\\*)",
+        pattern: "(\\*\\*[^*]+?)(\\p{P})(\\*\\*)",
         options: [.dotMatchesLineSeparators]
     ) {
         result = boldPattern.stringByReplacingMatches(
@@ -59,7 +60,7 @@ func preprocessMarkdown(_ text: String) -> String {
 
     // Italic: (*...구두점*) → (*...구두점\u{200C}*)  단, ** 는 제외
     if let italicPattern = try? NSRegularExpression(
-        pattern: "(?<!\\*)\\*((?!\\*).+?)(\\p{P})\\*(?!\\*)",
+        pattern: "(?<!\\*)\\*([^*]+?)(\\p{P})\\*(?!\\*)",
         options: [.dotMatchesLineSeparators]
     ) {
         result = italicPattern.stringByReplacingMatches(

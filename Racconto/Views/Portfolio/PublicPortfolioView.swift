@@ -32,8 +32,9 @@ struct PublicPortfolioView: View {
                 }
             }
             .onAppear {
-                // 탭 재진입 시 최신 데이터 갱신 (스토리 편집 등 반영)
-                guard meLoaded, !submittedUsername.isEmpty else { return }
+                // 탭 재진입 시 최신 데이터 갱신 (스토리 편집 등 반영).
+                // isLoading 가드로 .task와의 중복 호출 방지.
+                guard meLoaded, !submittedUsername.isEmpty, !viewModel.isLoading else { return }
                 Task { await viewModel.load(username: submittedUsername) }
             }
     }

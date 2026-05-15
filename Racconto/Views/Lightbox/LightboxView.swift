@@ -13,6 +13,8 @@ struct LightboxView: View {
     @State private var showEXIF = false
     @State private var showChapterPicker = false
     @State private var showControls = true
+    /// 필름스트립 탭으로 인한 인덱스 변경 표시 — onChange에서 무애니메이션 처리
+    @State private var filmstripTapInitiated = false
 
     init(
         photos: [Photo],
@@ -161,14 +163,25 @@ struct LightboxView: View {
                                     )
                             )
                             .id(i)
-                            .onTapGesture { currentIndex = i }
+                            .onTapGesture {
+                                // 탭 후 점프는 즉시 처리 — 사용자가 직접 누른 위치이므로
+                                // 애니메이션이 어색하게 느껴짐. 스크롤만 자연스럽게 센터로.
+                                filmstripTapInitiated = true
+                                currentIndex = i
+                            }
                     }
                 }
                 .padding(.horizontal, 12)
             }
             .frame(height: 64)
             .onChange(of: currentIndex) { _, new in
-                withAnimation { proxy.scrollTo(new, anchor: .center) }
+                if filmstripTapInitiated {
+                    proxy.scrollTo(new, anchor: .center)
+                    filmstripTapInitiated = false
+                } else {
+                    // TabView 스와이프 등 외부 변화: 부드럽게 따라감
+                    withAnimation { proxy.scrollTo(new, anchor: .center) }
+                }
             }
         }
         .padding(.bottom, 16)
