@@ -1,4 +1,5 @@
 import SwiftUI
+import MarkdownUI
 
 // MARK: - Selection Overlay
 
@@ -166,20 +167,30 @@ struct BlockCard: View {
 
     private var textBlock: some View {
         let content = block.textItem?.textContent ?? ""
-        return Text(content.isEmpty ? "빈 텍스트 블록" : content)
-            .lineLimit(4)
-            .font(.storyBodySerif)
-            .lineSpacing(5)
-            .foregroundStyle(content.isEmpty ? StoryTokens.faint : StoryTokens.inkSoft)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .blockCardChrome(
-                leadingEyebrow: "Text",
-                onMoveUp:   { Task { await viewModel.moveBlockUp(chapterId: chapterId, blockId: block.id) } },
-                onMoveDown: { Task { await viewModel.moveBlockDown(chapterId: chapterId, blockId: block.id) } }
-            )
-            .contextMenu { textContextMenu }
-            .contentShape(Rectangle())
-            .onTapGesture { if !isSelecting { showEditor = true } }
+        return Group {
+            if content.isEmpty {
+                Text("빈 텍스트 블록")
+                    .font(.storyBodySerif)
+                    .foregroundStyle(StoryTokens.faint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Markdown(preprocessMarkdown(content))
+                    .markdownTextStyle {
+                        FontFamily(.custom("Georgia"))
+                        FontSize(15)
+                    }
+                    .lineLimit(4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .blockCardChrome(
+            leadingEyebrow: "Text",
+            onMoveUp:   { Task { await viewModel.moveBlockUp(chapterId: chapterId, blockId: block.id) } },
+            onMoveDown: { Task { await viewModel.moveBlockDown(chapterId: chapterId, blockId: block.id) } }
+        )
+        .contextMenu { textContextMenu }
+        .contentShape(Rectangle())
+        .onTapGesture { if !isSelecting { showEditor = true } }
     }
 
     @ViewBuilder
