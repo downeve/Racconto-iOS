@@ -33,21 +33,48 @@ struct MarkdownTextEditor: UIViewRepresentable {
     @Binding var text: String
     let proxy: MarkdownEditorProxy
 
+    private static let editorFont = UIFont(name: "Georgia", size: 17) ?? UIFont.systemFont(ofSize: 17)
+
+    private static let paragraphStyle: NSParagraphStyle = {
+        let style = NSMutableParagraphStyle()
+        style.lineSpacing = 7   // Georgia 17pt 기본 행간 ~20pt → 27pt로 확보
+        return style
+    }()
+
+    private static var typingAttrs: [NSAttributedString.Key: Any] {
+        [.font: editorFont, .paragraphStyle: paragraphStyle]
+    }
+
+    private func styledString(_ raw: String) -> NSAttributedString {
+        NSAttributedString(string: raw, attributes: Self.typingAttrs)
+    }
+
     func makeUIView(context: Context) -> UITextView {
         let tv = UITextView()
         tv.delegate = context.coordinator
-        tv.font = UIFont(name: "Georgia", size: 17) ?? UIFont.systemFont(ofSize: 17)
         tv.backgroundColor = .clear
         tv.isScrollEnabled = false
         tv.textContainerInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tv.textContainer.lineFragmentPadding = 0
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.typingAttributes = Self.typingAttrs
+        tv.attributedText = styledString(text)
         proxy.textView = tv
         return tv
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
-        if tv.text != text { tv.text = text }
+        if tv.attributedText.string != text {
+            let sel = tv.selectedRange
+            tv.attributedText = styledString(text)
+            tv.typingAttributes = Self.typingAttrs
+            // 커서 위치 복원 (범위 초과 방지)
+            let len = tv.attributedText.length
+            tv.selectedRange = NSRange(
+                location: min(sel.location, len),
+                length:   min(sel.length, max(0, len - sel.location))
+            )
+        }
         proxy.textView = tv
     }
 
