@@ -130,8 +130,10 @@ class StoryViewModel {
 
     func addTextItem(chapterId: String, content: String) async {
         do {
-            // 서버가 빈 문자열 거부 — 공백으로 초기화 후 에디터에서 편집
-            let safeContent = content.isEmpty ? " " : content
+            // 서버가 빈 문자열 거부(strip 후 empty → 400).
+            // \u{200B}(zero-width space)는 파이썬 strip()에서 제거되지 않아 검증 통과,
+            // 에디터에서는 보이지 않으므로 사용자에게는 빈 상태로 표시됨.
+            let safeContent = content.isEmpty ? "\u{200B}" : content
             let req = TextItemAddRequest(textContent: safeContent)
             let item: ChapterItem = try await api.request("/chapters/\(chapterId)/texts", method: "POST", body: req)
             itemsByChapter[chapterId, default: []].append(item)

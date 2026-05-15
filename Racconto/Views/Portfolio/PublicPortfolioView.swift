@@ -20,6 +20,7 @@ struct PublicPortfolioView: View {
     var body: some View {
         content
             .task {
+                // fetchMe는 최초 1회만 실행
                 guard !meLoaded else { return }
                 meLoaded = true
                 meLoading = true
@@ -29,6 +30,11 @@ struct PublicPortfolioView: View {
                     submittedUsername = username
                     await viewModel.load(username: username)
                 }
+            }
+            .onAppear {
+                // 탭 재진입 시 최신 데이터 갱신 (스토리 편집 등 반영)
+                guard meLoaded, !submittedUsername.isEmpty else { return }
+                Task { await viewModel.load(username: submittedUsername) }
             }
     }
 
