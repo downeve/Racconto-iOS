@@ -43,6 +43,9 @@ func groupPortfolioItems(_ items: [PortfolioChapterItem]) -> [PortfolioBlock] {
 
 struct PortfolioBlockView: View {
     let items: [PortfolioChapterItem]
+    /// 프로젝트 전체 사진 배열 — 라이트박스 필름스트립 범위로 사용.
+    /// 전달하지 않으면 해당 블록 사진만 표시(폴백).
+    var allPhotos: [Photo] = []
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var lightboxPhotos: [Photo] = []
     @State private var lightboxIndex: Int = 0
@@ -181,11 +184,19 @@ struct PortfolioBlockView: View {
     }
 
     private func openLightbox(block: PortfolioBlock, index: Int) {
-        lightboxPhotos = block.photoItems.compactMap { item in
+        let blockPhotos = block.photoItems.compactMap { item -> Photo? in
             guard let url = item.imageUrl else { return nil }
             return Photo(id: item.id ?? UUID().uuidString, projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil)
         }
-        lightboxIndex = index
+        if !allPhotos.isEmpty {
+            // 전체 프로젝트 사진 배열 기준으로 필름스트립 구성
+            lightboxPhotos = allPhotos
+            let tappedUrl = block.photoItems.indices.contains(index) ? block.photoItems[index].imageUrl : nil
+            lightboxIndex = allPhotos.firstIndex { $0.imageUrl == tappedUrl } ?? 0
+        } else {
+            lightboxPhotos = blockPhotos
+            lightboxIndex = index
+        }
         showLightbox = true
     }
 }

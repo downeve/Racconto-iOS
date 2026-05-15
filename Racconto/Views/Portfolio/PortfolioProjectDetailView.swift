@@ -42,6 +42,24 @@ struct PortfolioProjectDetailView: View {
         return Double(activeChapterIndex + 1) / Double(project.chapters.count)
     }
 
+    /// 챕터·서브챕터 순서대로 모은 전체 사진 — 라이트박스 필름스트립 범위
+    private var allProjectPhotos: [Photo] {
+        var photos: [Photo] = []
+        for chapter in project.chapters {
+            for item in chapter.items ?? [] where item.itemType == "PHOTO" {
+                guard let url = item.imageUrl else { continue }
+                photos.append(Photo(id: item.id ?? UUID().uuidString, projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
+            }
+            for sub in chapter.subChapters ?? [] {
+                for item in sub.items ?? [] where item.itemType == "PHOTO" {
+                    guard let url = item.imageUrl else { continue }
+                    photos.append(Photo(id: item.id ?? UUID().uuidString, projectId: "", imageUrl: url, caption: item.caption, order: 0, localMissing: nil))
+                }
+            }
+        }
+        return photos
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -161,12 +179,12 @@ struct PortfolioProjectDetailView: View {
     private func chapterSection(_ chapter: PortfolioChapter, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             chapterHeader(chapter, number: index + 1, isTop: true)
-            PortfolioBlockView(items: chapter.items ?? [])
+            PortfolioBlockView(items: chapter.items ?? [], allPhotos: allProjectPhotos)
 
             ForEach(Array((chapter.subChapters ?? []).enumerated()), id: \.element.id) { subIdx, sub in
                 VStack(alignment: .leading, spacing: 16) {
                     chapterHeader(sub, number: subIdx + 1, isTop: false)
-                    PortfolioBlockView(items: sub.items ?? [])
+                    PortfolioBlockView(items: sub.items ?? [], allPhotos: allProjectPhotos)
                 }
                 .padding(.top, 32)
             }
