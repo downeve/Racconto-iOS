@@ -66,7 +66,7 @@ struct PortfolioBlockView: View {
                     sideBySideBlock(block)
                 } else if block.photoItems.isEmpty {
                     if let text = block.textItem?.textContent {
-                        Markdown(text)
+                        Markdown(preprocessMarkdown(text))
                             .font(.custom("Georgia", size: 16))
                     }
                 } else {
@@ -166,7 +166,7 @@ struct PortfolioBlockView: View {
     }
 
     private func textCol(block: PortfolioBlock) -> some View {
-        Markdown(block.textItem?.textContent ?? "")
+        Markdown(preprocessMarkdown(block.textItem?.textContent ?? ""))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
