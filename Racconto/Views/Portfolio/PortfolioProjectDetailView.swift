@@ -99,10 +99,13 @@ struct PortfolioProjectDetailView: View {
         }
         .coordinateSpace(name: "scroll")
         .onPreferenceChange(ChapterMinYKey.self) { positions in
-            let sorted = positions.sorted { $0.index < $1.index }
             // 스크롤 뷰 상단 기준 100pt 아래까지 진입한 챕터 중 가장 마지막
-            let active = sorted.last { $0.minY <= 100 } ?? sorted.first
-            if let active {
+            let active = positions
+                .filter { $0.minY <= 100 }
+                .max(by: { $0.index < $1.index })
+                ?? positions.min(by: { $0.index < $1.index })
+            // 동일 값 set 차단 — 매 프레임 업데이트 비용 절감
+            if let active, active.index != activeChapterIndex {
                 activeChapterIndex = active.index
             }
         }

@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 
+@MainActor
 @Observable
 class StoryViewModel {
     var chapters: [Chapter] = []

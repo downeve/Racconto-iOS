@@ -312,9 +312,9 @@ private struct ZoomablePhotoView: View {
         CachedImage(url: url, variant: .public, contentMode: .fit)
             .scaleEffect(scale)
             .gesture(
-                MagnificationGesture()
+                MagnifyGesture()
                     .onChanged { value in
-                        scale = max(1.0, lastScale * value)
+                        scale = max(1.0, lastScale * value.magnification)
                     }
                     .onEnded { _ in
                         lastScale = scale
