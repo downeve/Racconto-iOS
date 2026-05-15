@@ -33,6 +33,8 @@ struct LightboxView: View {
 
     var currentPhoto: Photo? { photos.indices.contains(currentIndex) ? photos[currentIndex] : nil }
     private var isTrashMode: Bool { onRestore != nil }
+    /// viewModel 없고 trash 모드도 아닌 경우 = 포트폴리오 공개 뷰어 모드
+    private var isPortfolioMode: Bool { viewModel == nil && onRestore == nil }
 
     var body: some View {
         ZStack {
@@ -41,25 +43,13 @@ struct LightboxView: View {
             VStack(spacing: 0) {
                 // 상단 바
                 if showControls {
-                    HStack {
-                        Button { dismiss() } label: {
-                            Image(systemName: "xmark")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                                .frame(width: 36, height: 36)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                        }
-                        Spacer()
-                        Text("\(currentIndex + 1) / \(photos.count)")
-                            .font(.subheadline)
-                            .foregroundStyle(.white)
-                        Spacer()
-                        Color.clear.frame(width: 36, height: 36)
+                    if isPortfolioMode {
+                        portfolioTopBar
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    } else {
+                        editModeTopBar
+                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 12)
-                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 // 사진 영역
@@ -75,14 +65,16 @@ struct LightboxView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
-                // EXIF 패널
-                if showControls && showEXIF, let photo = currentPhoto {
+                // EXIF 패널 (편집 모드 전용)
+                if !isPortfolioMode && showControls && showEXIF, let photo = currentPhoto {
                     EXIFPanel(photo: photo)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // 하단 바
-                if showControls, let photo = currentPhoto {
+                // 하단 — 포트폴리오: filmstrip / 편집: editBar / 휴지통: trashBar
+                if isPortfolioMode {
+                    filmstrip
+                } else if showControls, let photo = currentPhoto {
                     if isTrashMode {
                         trashBar(photo: photo)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -95,6 +87,91 @@ struct LightboxView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showEXIF)
         .animation(.easeInOut(duration: 0.2), value: showControls)
+    }
+
+    // MARK: - 포트폴리오 상단 바 (캡션 + 공유)
+
+    private var portfolioTopBar: some View {
+        HStack(spacing: 0) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+            }
+            Spacer()
+            if let caption = currentPhoto?.caption, !caption.isEmpty {
+                Text(caption)
+                    .font(.custom("Georgia-Italic", size: 14))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .padding(.horizontal, 8)
+            }
+            Spacer()
+            Button { } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 17))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - 편집 모드 상단 바 (카운터)
+
+    private var editModeTopBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+            Spacer()
+            Text("\(currentIndex + 1) / \(photos.count)")
+                .font(.subheadline)
+                .foregroundStyle(.white)
+            Spacer()
+            Color.clear.frame(width: 36, height: 36)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Filmstrip (포트폴리오 뷰어 전용)
+
+    private var filmstrip: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(photos.indices, id: \.self) { i in
+                        CachedImage(url: photos[i].imageUrl, variant: .grid, contentMode: .fill)
+                            .frame(width: 56, height: 56)
+                            .clipped()
+                            .opacity(i == currentIndex ? 1.0 : 0.55)
+                            .overlay(
+                                Rectangle()
+                                    .strokeBorder(
+                                        Color(red: 0.659, green: 0.263, blue: 0.122),
+                                        lineWidth: i == currentIndex ? 2 : 0
+                                    )
+                            )
+                            .id(i)
+                            .onTapGesture { currentIndex = i }
+                    }
+                }
+                .padding(.horizontal, 12)
+            }
+            .frame(height: 64)
+            .onChange(of: currentIndex) { _, new in
+                withAnimation { proxy.scrollTo(new, anchor: .center) }
+            }
+        }
+        .padding(.bottom, 16)
     }
 
     // MARK: - 일반 편집 바
