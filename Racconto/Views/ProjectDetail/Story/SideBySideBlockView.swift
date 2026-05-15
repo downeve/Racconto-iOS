@@ -93,7 +93,7 @@ struct SideBySideBlockView: View {
     }
 
     private var textSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        Group {
             if let content = block.textItem?.textContent, !content.isEmpty {
                 Markdown(preprocessMarkdown(content))
                     .font(.body)
@@ -101,12 +101,12 @@ struct SideBySideBlockView: View {
                 Text("텍스트 없음")
                     .foregroundStyle(.tertiary)
             }
-            Button("텍스트 편집") { showTextEditor = true }
-                .font(.caption)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(6)
+        .contentShape(Rectangle())
+        .onTapGesture { showTextEditor = true }
     }
 }
