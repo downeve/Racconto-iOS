@@ -148,7 +148,7 @@ struct PublicPortfolioView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .aspectRatio(4.0 / 5.0, contentMode: .fill)
+            .aspectRatio(4.0 / 5.0, contentMode: .fit)
             .clipped()
             .cornerRadius(2)
 
