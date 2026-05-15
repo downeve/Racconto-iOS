@@ -67,6 +67,8 @@ struct BlockCard: View {
                 onMoveUp:   { Task { await viewModel.moveBlockUp(chapterId: chapterId, blockId: block.id) } },
                 onMoveDown: { Task { await viewModel.moveBlockDown(chapterId: chapterId, blockId: block.id) } }
             )
+            .contentShape(Rectangle())
+            .onTapGesture { if !isSelecting { showEditor = true } }
             .contextMenu { photoContextMenu }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("사진 블록, \(block.photoItems.count)장, \(layoutKey)")

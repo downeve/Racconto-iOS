@@ -95,7 +95,7 @@ struct SideBySideBlockView: View {
     private var textSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let content = block.textItem?.textContent, !content.isEmpty {
-                Markdown(content)
+                Markdown(preprocessMarkdown(content))
                     .font(.body)
             } else {
                 Text("텍스트 없음")

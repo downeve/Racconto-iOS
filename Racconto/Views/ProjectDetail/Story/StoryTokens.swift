@@ -30,6 +30,43 @@ enum StoryTokens {
     static let photoRadius: CGFloat = 2
 }
 
+// MARK: - Markdown Preprocessing
+
+/// CommonMark 규칙상 닫는 ** 또는 * 바로 앞에 구두점(:;,.!?)이 있으면
+/// right-flanking delimiter 조건 불충족 → bold/italic 미적용.
+/// 구두점을 마커 밖으로 이동해 렌더링을 강제한다.
+/// 예) **올림푸스 Mju:** → **올림푸스 Mju**:
+func preprocessMarkdown(_ text: String) -> String {
+    let punctuation = "[:;,.!?]"
+    var result = text
+
+    // Bold: **text구두점** → **text**구두점
+    if let boldPattern = try? NSRegularExpression(
+        pattern: "\\*\\*(.+?)(\(punctuation)+)\\*\\*",
+        options: [.dotMatchesLineSeparators]
+    ) {
+        result = boldPattern.stringByReplacingMatches(
+            in: result,
+            range: NSRange(result.startIndex..., in: result),
+            withTemplate: "**$1**$2"
+        )
+    }
+
+    // Italic: *text구두점* → *text*구두점 (** 는 제외)
+    if let italicPattern = try? NSRegularExpression(
+        pattern: "(?<!\\*)\\*(?!\\*)(.+?)(\(punctuation)+)\\*(?!\\*)",
+        options: [.dotMatchesLineSeparators]
+    ) {
+        result = italicPattern.stringByReplacingMatches(
+            in: result,
+            range: NSRange(result.startIndex..., in: result),
+            withTemplate: "*$1*$2"
+        )
+    }
+
+    return result
+}
+
 // MARK: - Font Tokens
 
 extension Font {

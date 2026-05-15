@@ -39,8 +39,9 @@ struct MarkdownTextEditor: UIViewRepresentable {
         tv.font = UIFont(name: "Georgia", size: 17) ?? UIFont.systemFont(ofSize: 17)
         tv.backgroundColor = .clear
         tv.isScrollEnabled = false
-        tv.textContainerInset = .zero
+        tv.textContainerInset = UIEdgeInsets(top: 0, left: 0, bottom: 24, right: 0)
         tv.textContainer.lineFragmentPadding = 0
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         proxy.textView = tv
         return tv
     }
@@ -48,6 +49,14 @@ struct MarkdownTextEditor: UIViewRepresentable {
     func updateUIView(_ tv: UITextView, context: Context) {
         if tv.text != text { tv.text = text }
         proxy.textView = tv
+    }
+
+    // 부모 ScrollView 폭에 맞춰 UITextView 크기 결정
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        let width = proposal.width ?? UIScreen.main.bounds.width
+        uiView.frame.size.width = width
+        let fittingSize = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: max(300, fittingSize.height))
     }
 
     func makeCoordinator() -> Coordinator { Coordinator($text) }
@@ -96,14 +105,13 @@ struct TextBlockEditorView: View {
 
                 if showPreview {
                     ScrollView {
-                        Markdown(draft.isEmpty ? "*내용을 입력하세요*" : draft)
+                        Markdown(preprocessMarkdown(draft.isEmpty ? "*내용을 입력하세요*" : draft))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(24)
                     }
                 } else {
                     ScrollView {
                         MarkdownTextEditor(text: $draft, proxy: proxy)
-                            .frame(minHeight: 300)
                             .padding(.horizontal, 24)
                             .padding(.top, 16)
                     }
