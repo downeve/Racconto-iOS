@@ -39,7 +39,7 @@ struct NoteCard: View {
 
             Markdown(applyHardBreaks(note.content))
                 .markdownTextStyle { FontSize(.em(0.9)) }
-                .frame(maxHeight: 64)
+                .frame(maxWidth: .infinity, maxHeight: 64, alignment: .topLeading)
                 .clipped()
         }
         .padding(12)
