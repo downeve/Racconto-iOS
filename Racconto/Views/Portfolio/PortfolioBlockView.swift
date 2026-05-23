@@ -110,7 +110,7 @@ struct PortfolioBlockView: View {
         VStack(spacing: 16) {
             ForEach(Array(photos.enumerated()), id: \.element.id) { idx, item in
                 VStack(alignment: .leading, spacing: 6) {
-                    SingleFitPhoto(url: item.imageUrl)
+                    SingleFitPhoto(url: item.imageUrl, initialRatio: item.aspectRatio)
                         .cornerRadius(2)
                         .onTapGesture { openLightbox(block: block, index: idx) }
                     if let cap = item.caption, !cap.isEmpty {
@@ -176,7 +176,7 @@ struct PortfolioBlockView: View {
     private func photoColumn(block: PortfolioBlock) -> some View {
         VStack(spacing: 4) {
             ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
-                SingleFitPhoto(url: item.imageUrl)
+                SingleFitPhoto(url: item.imageUrl, initialRatio: item.aspectRatio)
                     .cornerRadius(2)
                     .onTapGesture { openLightbox(block: block, index: idx) }
             }
@@ -205,15 +205,26 @@ struct PortfolioBlockView: View {
 
 private struct SingleFitPhoto: View {
     let url: String?
-    @State private var ratio: CGFloat = 3.0 / 2.0
+    /// P-7: 서버에서 받은 정확한 비율. 있으면 첫 렌더부터 정확한 높이로 표시, 없으면 onSuccess 폴백.
+    let initialRatio: CGFloat?
+    @State private var ratio: CGFloat
+
+    init(url: String?, initialRatio: CGFloat? = nil) {
+        self.url = url
+        self.initialRatio = initialRatio
+        _ratio = State(initialValue: initialRatio ?? (3.0 / 2.0))
+    }
 
     var body: some View {
         KFImage(cfUrl(url, variant: .public))
             .placeholder { Color(.secondarySystemBackground) }
             .resizable()
             .onSuccess { result in
-                let size = result.image.size
-                if size.height > 0 { ratio = size.width / size.height }
+                // 서버 메타데이터가 없을 때만 이미지 로드 후 ratio 갱신.
+                if initialRatio == nil {
+                    let size = result.image.size
+                    if size.height > 0 { ratio = size.width / size.height }
+                }
             }
             .aspectRatio(ratio, contentMode: .fit)
             .frame(maxWidth: .infinity)
@@ -229,7 +240,22 @@ private struct PortfolioJustifiedPhotoGrid: View {
     let containerWidth: CGFloat
     let onTap: (Int) -> Void     // 전체 items 배열 내 인덱스
 
-    @State private var ratios: [Int: CGFloat] = [:]
+    /// P-7: 서버에서 받은 정확한 비율을 초기값으로 채움. 누락된 인덱스만 onSuccess 폴백.
+    @State private var ratios: [Int: CGFloat]
+
+    init(items: [PortfolioChapterItem], cols: Int, gap: CGFloat,
+         containerWidth: CGFloat, onTap: @escaping (Int) -> Void) {
+        self.items = items
+        self.cols = cols
+        self.gap = gap
+        self.containerWidth = containerWidth
+        self.onTap = onTap
+        var initial: [Int: CGFloat] = [:]
+        for (i, item) in items.enumerated() {
+            if let r = item.aspectRatio { initial[i] = r }
+        }
+        _ratios = State(initialValue: initial)
+    }
 
     private var rows: [[(index: Int, item: PortfolioChapterItem)]] {
         let indexed = items.enumerated().map { (index: $0.offset, item: $0.element) }
@@ -259,9 +285,12 @@ private struct PortfolioJustifiedPhotoGrid: View {
                     .placeholder { Color(.secondarySystemBackground) }
                     .resizable()
                     .onSuccess { result in
-                        let size = result.image.size
-                        if size.height > 0 {
-                            ratios[entry.index] = size.width / size.height
+                        // 서버 메타데이터로 이미 채워진 경우는 건너뜀.
+                        if entry.item.aspectRatio == nil {
+                            let size = result.image.size
+                            if size.height > 0 {
+                                ratios[entry.index] = size.width / size.height
+                            }
                         }
                     }
                     .aspectRatio(contentMode: .fill)

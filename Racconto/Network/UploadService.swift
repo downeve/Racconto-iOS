@@ -39,6 +39,10 @@ class UploadService {
         let localURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("upload_\(UUID().uuidString).jpg")
 
+        // P-7: 원본 차원 측정 (UIImage.size는 메인스레드 외에서도 안전).
+        let width = Int(image.size.width * image.scale)
+        let height = Int(image.size.height * image.scale)
+
         // 무거운 작업을 background로
         let (exif, writeOK): (EXIFData, Bool) = await Task.detached(priority: .userInitiated) {
             let exif = EXIFExtractor.extract(from: data)
@@ -57,7 +61,9 @@ class UploadService {
             localPath: localURL.path,
             projectId: projectId,
             originalFilename: filename,
-            exif: exif
+            exif: exif,
+            width: width,
+            height: height
         )
         context.insert(item)
         try? context.save()
@@ -175,7 +181,9 @@ class UploadService {
             focalLength: item.exifFocalLength,
             gpsLat: item.exifGpsLat,
             gpsLng: item.exifGpsLng,
-            takenAt: item.exifTakenAt
+            takenAt: item.exifTakenAt,
+            width: item.width,
+            height: item.height
         )
         let _: Photo = try await api.request("/photos/", method: "POST", body: req)
     }

@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 struct LightboxView: View {
     @Environment(\.dismiss) private var dismiss
@@ -89,6 +90,24 @@ struct LightboxView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showEXIF)
         .animation(.easeInOut(duration: 0.2), value: showControls)
+        .onAppear { prefetchNeighbors(of: currentIndex) }
+        .onChange(of: currentIndex) { _, new in
+            prefetchNeighbors(of: new)
+        }
+    }
+
+    /// P-2: 현재 사진 기준 ±2장의 public variant를 디스크 캐시에 선프리패치.
+    /// TabView는 모든 페이지를 메모리에 두지만 KFImage는 onAppear에 fetch하므로
+    /// 스와이프 시 흰 placeholder가 잠깐 보이는 문제 완화.
+    private func prefetchNeighbors(of index: Int) {
+        let range = max(0, index - 2)...min(photos.count - 1, index + 2)
+        guard range.lowerBound <= range.upperBound else { return }
+        let urls: [URL] = range.compactMap { i in
+            guard i != index, photos.indices.contains(i) else { return nil }
+            return URL(string: photos[i].imageUrl)
+        }
+        guard !urls.isEmpty else { return }
+        ImagePrefetcher(urls: urls).start()
     }
 
     // MARK: - 포트폴리오 상단 바 (캡션 + 공유)

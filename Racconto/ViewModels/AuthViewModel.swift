@@ -156,15 +156,31 @@ class AuthViewModel: NSObject {
 
                 guard let callbackURL,
                       let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
-                      let token = components.queryItems?.first(where: { $0.name == "token" })?.value else {
+                      let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
                     self.errorMessage = "로그인에 실패했습니다."
                     continuation.resume()
                     return
                 }
 
-                self.api.setToken(token)
-                self.isAuthenticated = true
-                continuation.resume()
+                // S-2: 1회용 code를 토큰으로 교환 (OAuth Authorization Code Exchange).
+                // 콜백 URL에 토큰이 노출되지 않도록 별도 POST 호출로 처리.
+                Task {
+                    do {
+                        struct ExchangeBody: Encodable { let code: String }
+                        let resp: AuthResponse = try await self.api.request(
+                            "/auth/exchange",
+                            method: "POST",
+                            body: ExchangeBody(code: code)
+                        )
+                        self.api.setToken(resp.accessToken)
+                        self.isAuthenticated = true
+                    } catch let err as APIError {
+                        self.errorMessage = err.errorDescription ?? "로그인에 실패했습니다."
+                    } catch {
+                        self.errorMessage = "로그인에 실패했습니다."
+                    }
+                    continuation.resume()
+                }
             }
             session.prefersEphemeralWebBrowserSession = false
             session.presentationContextProvider = self

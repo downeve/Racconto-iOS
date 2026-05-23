@@ -152,11 +152,8 @@ class StoryViewModel {
 
     func addTextItem(chapterId: String, content: String) async {
         do {
-            // 서버가 빈 문자열 거부(strip 후 empty → 400).
-            // \u{200B}(zero-width space)는 파이썬 strip()에서 제거되지 않아 검증 통과,
-            // 에디터에서는 보이지 않으므로 사용자에게는 빈 상태로 표시됨.
-            let safeContent = content.isEmpty ? "\u{200B}" : content
-            let req = TextItemAddRequest(textContent: safeContent)
+            // U-6: 서버가 빈 텍스트 블록을 명시적으로 허용. 기존 ZWSP(U+200B) 우회 제거.
+            let req = TextItemAddRequest(textContent: content)
             let item: ChapterItem = try await api.request("/chapters/\(chapterId)/texts", method: "POST", body: req)
             itemsByChapter[chapterId, default: []].append(item)
         } catch let err as APIError {
@@ -168,6 +165,9 @@ class StoryViewModel {
         for item in images {
             do {
                 let exif = EXIFExtractor.extract(from: item.data)
+                // P-7: 원본 차원 측정
+                let width = Int(item.image.size.width * item.image.scale)
+                let height = Int(item.image.size.height * item.image.scale)
                 // 1. CF 업로드 URL 획득
                 let urlResp: CFUploadURLResponse = try await api.request("/photos/cf-upload-url")
                 // 2. 리사이즈 + Cloudflare 업로드
@@ -183,7 +183,9 @@ class StoryViewModel {
                     shutterSpeed: exif.shutterSpeed, aperture: exif.aperture,
                     focalLength: exif.focalLength,
                     gpsLat: exif.gpsLat, gpsLng: exif.gpsLng,
-                    takenAt: exif.takenAt
+                    takenAt: exif.takenAt,
+                    width: width,
+                    height: height
                 )
                 let photo: Photo = try await api.request("/photos/", method: "POST", body: photoReq)
                 // 4. 챕터에 연결
@@ -225,11 +227,8 @@ class StoryViewModel {
 
     func updateTextItem(chapterId: String, itemId: String, content: String) async {
         do {
-            // 서버가 strip 후 빈 문자열 거부(400) — addTextItem과 동일하게 U+200B로 fallback
-            let safe = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? "\u{200B}"
-                : content
-            let req = TextItemUpdateRequest(textContent: safe)
+            // U-6: 서버가 빈 텍스트 블록을 명시적으로 허용. 기존 ZWSP(U+200B) 우회 제거.
+            let req = TextItemUpdateRequest(textContent: content)
             let updated: ChapterItem = try await api.request("/chapters/\(chapterId)/texts/\(itemId)", method: "PUT", body: req)
             if var items = itemsByChapter[chapterId], let idx = items.firstIndex(where: { $0.id == itemId }) {
                 items[idx] = updated

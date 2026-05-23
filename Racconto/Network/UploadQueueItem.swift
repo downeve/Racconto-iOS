@@ -19,8 +19,11 @@ class UploadQueueItem {
     var exifTakenAt: String?
     var exifGpsLat: String?
     var exifGpsLng: String?
+    /// P-7: 이미지 원본 차원 — 업로드 직후 PhotoMetadataRequest로 전송.
+    var width: Int?
+    var height: Int?
 
-    init(localPath: String, projectId: String, originalFilename: String, exif: EXIFData) {
+    init(localPath: String, projectId: String, originalFilename: String, exif: EXIFData, width: Int?, height: Int?) {
         self.id = UUID().uuidString
         self.localPath = localPath
         self.projectId = projectId
@@ -37,5 +40,7 @@ class UploadQueueItem {
         self.exifTakenAt = exif.takenAt
         self.exifGpsLat = exif.gpsLat
         self.exifGpsLng = exif.gpsLng
+        self.width = width
+        self.height = height
     }
 }
