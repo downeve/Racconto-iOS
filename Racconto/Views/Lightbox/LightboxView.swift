@@ -240,6 +240,7 @@ struct LightboxView: View {
         .background(.ultraThinMaterial)
         .sheet(isPresented: $showChapterPicker) {
             ChapterPickerSheet(projectId: projectId, onSelect: { chapter, alreadyIn in
+                ChapterPickerSheet.invalidateMembershipCache(photoId: photo.id)
                 Task {
                     if alreadyIn.contains(chapter.id) {
                         await viewModel?.removeFromChapter(photoId: photo.id, chapterId: chapter.id)

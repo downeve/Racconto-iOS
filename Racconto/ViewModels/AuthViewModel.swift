@@ -1,6 +1,7 @@
 import Foundation
 import AuthenticationServices
 
+@MainActor
 @Observable
 class AuthViewModel: NSObject {
     var isAuthenticated: Bool = false
@@ -21,6 +22,19 @@ class AuthViewModel: NSObject {
     override init() {
         super.init()
         isAuthenticated = api.isAuthenticated
+    }
+
+    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        // MainActor 격리 우회 — ASWebAuthenticationSession이 동기 호출
+        MainActor.assumeIsolated { resolveAnchor() }
+    }
+
+    private func resolveAnchor() -> ASPresentationAnchor {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        if let window = scene?.keyWindow { return window }
+        if let scene { return UIWindow(windowScene: scene) }
+        preconditionFailure("No UIWindowScene available")
     }
 
     func fetchMe() async {
@@ -99,14 +113,12 @@ class AuthViewModel: NSObject {
 
     // MARK: - Google / Naver (ASWebAuthenticationSession)
 
-    @MainActor
     func loginWithOAuth(provider: String) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
 
-        let baseURL = "https://racconto.app/api"
-        guard let url = URL(string: "\(baseURL)/auth/\(provider)/login?platform=ios") else { return }
+        guard let url = URL(string: "\(RaccontoAPI.baseURL)/auth/\(provider)/login?platform=ios") else { return }
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let session = ASWebAuthenticationSession(
@@ -150,15 +162,7 @@ class AuthViewModel: NSObject {
 
 // MARK: - ASWebAuthenticationPresentationContextProviding
 
-extension AuthViewModel: ASWebAuthenticationPresentationContextProviding {
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
-        if let window = scene?.keyWindow { return window }
-        if let scene { return UIWindow(windowScene: scene) }
-        preconditionFailure("No UIWindowScene available")
-    }
-}
+extension AuthViewModel: ASWebAuthenticationPresentationContextProviding {}
 
 // 응답 본문이 없거나 무시해도 되는 경우
 struct EmptyResponse: Decodable {}

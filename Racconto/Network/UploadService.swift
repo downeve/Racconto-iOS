@@ -28,12 +28,25 @@ class UploadService {
     }()
     private var context: ModelContext { container.mainContext }
 
-    func enqueue(image: UIImage, exif: EXIFData, projectId: String, filename: String) {
-        let resized = ImageResizer.resize(image)
+    /// EXIF 파싱 + 리사이즈 + 디스크 쓰기는 백그라운드에서 수행.
+    /// SwiftData(mainContext) 작업과 관찰 가능한 상태 변경만 메인 컨텍스트에서.
+    func enqueue(image: UIImage, data: Data, projectId: String, filename: String) async {
         let localURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("upload_\(UUID().uuidString).jpg")
-        let writeOK = (try? resized.write(to: localURL)) != nil
+
+        // 무거운 작업을 background로
+        let (exif, writeOK): (EXIFData, Bool) = await Task.detached(priority: .userInitiated) {
+            let exif = EXIFExtractor.extract(from: data)
+            let resized = ImageResizer.resize(image)
+            let ok = (try? resized.write(to: localURL)) != nil
+            return (exif, ok)
+        }.value
+
+        #if DEBUG
         print("[UploadService] enqueue: \(filename), 파일 저장 \(writeOK ? "성공" : "실패") → \(localURL.lastPathComponent)")
+        #else
+        _ = writeOK
+        #endif
 
         let item = UploadQueueItem(
             localPath: localURL.path,
@@ -44,14 +57,18 @@ class UploadService {
         context.insert(item)
         try? context.save()
         pendingCount += 1
+        #if DEBUG
         print("[UploadService] pendingCount=\(pendingCount), processQueue 시작")
+        #endif
 
         Task { await processQueue() }
     }
 
     func processQueue() async {
         guard !isProcessing else {
+            #if DEBUG
             print("[UploadService] processQueue: 이미 처리 중, 건너뜀")
+            #endif
             return
         }
         isProcessing = true
@@ -64,11 +81,15 @@ class UploadService {
         )
         do {
             let items = try context.fetch(descriptor)
+            #if DEBUG
             print("[UploadService] pending 항목 \(items.count)개 조회됨")
+            #endif
             guard !items.isEmpty else { pendingCount = 0; return }
             await processItems(items)
         } catch {
+            #if DEBUG
             print("[UploadService] fetch 실패: \(error)")
+            #endif
             pendingCount = 0
             return
         }
@@ -77,13 +98,17 @@ class UploadService {
             FetchDescriptor<UploadQueueItem>(predicate: #Predicate { $0.status == "pending" })
         ))?.count ?? 0
         pendingCount = remaining
+        #if DEBUG
         print("[UploadService] 완료. 남은 pending=\(remaining)")
+        #endif
     }
 
     private func processItems(_ items: [UploadQueueItem]) async {
 
         for item in items {
+            #if DEBUG
             print("[UploadService] 업로드 시작: \(item.originalFilename) (retryCount=\(item.retryCount))")
+            #endif
             var uploaded = false
             while !uploaded && item.retryCount < 3 {
                 item.status = "uploading"
@@ -93,7 +118,9 @@ class UploadService {
                     item.status = "done"
                     completedCount += 1
                     uploaded = true
+                    #if DEBUG
                     print("[UploadService] 업로드 성공: \(item.originalFilename)")
+                    #endif
                     try? FileManager.default.removeItem(atPath: item.localPath)
                 } catch {
                     item.retryCount += 1
@@ -104,7 +131,9 @@ class UploadService {
                     default: desc = error.localizedDescription
                     }
                     lastErrorMessage = "[\(item.originalFilename)] \(desc)"
+                    #if DEBUG
                     print("[UploadService] 실패 (시도 \(item.retryCount)/3): \(desc)")
+                    #endif
                     if item.retryCount >= 3 {
                         item.status = "failed"
                     } else {

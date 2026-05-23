@@ -12,6 +12,19 @@ struct ChapterPickerSheet: View {
     @State private var isLoading = false
     private let api = RaccontoAPI.shared
 
+    // 시트 dismiss 후 다시 열릴 때 N+1 fetch 회피 (라이트박스에서 같은 사진 재진입 흔함)
+    // 챕터 변경 시 invalidate 호출 필요.
+    private static var membershipCache: [String: Set<String>] = [:]
+    private static let cacheQueue = DispatchQueue(label: "racconto.chapterPicker.cache")
+
+    static func invalidateMembershipCache(photoId: String) {
+        cacheQueue.sync { _ = membershipCache.removeValue(forKey: photoId) }
+    }
+
+    static func invalidateAllMembershipCache() {
+        cacheQueue.sync { membershipCache.removeAll() }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -75,6 +88,15 @@ struct ChapterPickerSheet: View {
                 chapterNumbers = numbers
 
                 guard let pid = photoId else { return }
+
+                // 캐시 hit 시 N+1 fetch 회피
+                let cached = Self.cacheQueue.sync { Self.membershipCache[pid] }
+                if let cached {
+                    addedChapterIds = cached
+                    return
+                }
+
+                var found: Set<String> = []
                 await withTaskGroup(of: (String, Bool).self) { group in
                     for chapter in chapters {
                         group.addTask {
@@ -84,9 +106,11 @@ struct ChapterPickerSheet: View {
                         }
                     }
                     for await (id, has) in group where has {
-                        addedChapterIds.insert(id)
+                        found.insert(id)
                     }
                 }
+                addedChapterIds = found
+                Self.cacheQueue.sync { Self.membershipCache[pid] = found }
             }
         }
         .presentationDetents([.medium, .large])

@@ -4,7 +4,12 @@ import KeychainAccess
 @Observable
 class RaccontoAPI {
     static let shared = RaccontoAPI()
-    private let baseURL = "https://racconto.app/api"
+    #if DEBUG
+    static let baseURL = "http://localhost:8000"
+    #else
+    static let baseURL = "https://racconto.app/api"
+    #endif
+    private var baseURL: String { Self.baseURL }
     private let keychain = Keychain(service: "com.racconto.app")
 
     private var token: String? {

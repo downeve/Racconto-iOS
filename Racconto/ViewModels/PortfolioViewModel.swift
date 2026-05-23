@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 @Observable
 class PortfolioViewModel {
     var portfolio: PortfolioResponse?

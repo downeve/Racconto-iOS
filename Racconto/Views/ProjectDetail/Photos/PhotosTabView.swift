@@ -109,14 +109,17 @@ struct PhotosTabView: View {
         }
         .sheet(isPresented: $showPicker) {
             PhotoPicker { items in
-                for (image, data, filename) in items {
-                    let exif = EXIFExtractor.extract(from: data)
-                    UploadService.shared.enqueue(
-                        image: image,
-                        exif: exif,
-                        projectId: project.id,
-                        filename: filename
-                    )
+                // EXIF 파싱과 리사이즈가 메인 스레드를 차단하지 않도록 Task로 비동기 처리.
+                // enqueue 내부에서 detached로 무거운 작업 수행.
+                Task {
+                    for (image, data, filename) in items {
+                        await UploadService.shared.enqueue(
+                            image: image,
+                            data: data,
+                            projectId: project.id,
+                            filename: filename
+                        )
+                    }
                 }
             }
         }

@@ -13,6 +13,7 @@ enum PhotoSortBy: String, CaseIterable {
 
 enum PhotoSortOrder: String { case asc, desc }
 
+@MainActor
 @Observable
 class PhotosViewModel {
     var photos: [Photo] = []
@@ -65,8 +66,10 @@ class PhotosViewModel {
     }
 
     private let api = RaccontoAPI.shared
+    private var currentProjectId: String = ""
 
     func load(projectId: String) async {
+        currentProjectId = projectId
         isLoading = true
         defer { isLoading = false }
         do {
@@ -103,7 +106,12 @@ class PhotosViewModel {
         photos.removeAll { $0.id == photoId }
         do {
             try await api.requestVoid("/photos/\(photoId)", method: "DELETE")
-        } catch { await load(projectId: "") }
+        } catch {
+            // 실패 시 서버 상태와 동기화 — currentProjectId가 비어있으면 재로드 생략
+            if !currentProjectId.isEmpty {
+                await load(projectId: currentProjectId)
+            }
+        }
     }
 
     func rotate(photoId: String, angle: Int) async {
