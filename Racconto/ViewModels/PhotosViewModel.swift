@@ -90,6 +90,8 @@ class PhotosViewModel {
             let req = PhotoUpdateRequest(rating: newRating)
             let updated: Photo = try await api.request("/photos/\(photoId)", method: "PUT", body: req)
             if let idx = photos.firstIndex(where: { $0.id == photoId }) { photos[idx] = updated }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -99,6 +101,8 @@ class PhotosViewModel {
             let req = PhotoUpdateRequest(colorLabel: label)
             let updated: Photo = try await api.request("/photos/\(photoId)", method: "PUT", body: req)
             if let idx = photos.firstIndex(where: { $0.id == photoId }) { photos[idx] = updated }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -119,6 +123,8 @@ class PhotosViewModel {
             struct RotateBody: Encodable { let angle: Int }
             let updated: Photo = try await api.request("/photos/\(photoId)/rotate", method: "POST", body: RotateBody(angle: angle))
             if let idx = photos.firstIndex(where: { $0.id == photoId }) { photos[idx] = updated }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -127,6 +133,8 @@ class PhotosViewModel {
             do {
                 let req = PhotoItemAddRequest(photoId: photoId)
                 try await api.requestVoid("/chapters/\(chapterId)/photos", method: "POST", body: req)
+            } catch let err as APIError {
+                errorMessage = err.errorDescription
             } catch {}
         }
     }
@@ -134,6 +142,8 @@ class PhotosViewModel {
     func removeFromChapter(photoId: String, chapterId: String) async {
         do {
             try await api.requestVoid("/chapters/\(chapterId)/photos/\(photoId)", method: "DELETE")
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -141,6 +151,8 @@ class PhotosViewModel {
         do {
             let req = ProjectUpdateRequest(coverImageUrl: imageUrl)
             try await api.requestVoid("/projects/\(projectId)", method: "PUT", body: req)
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 

@@ -1,6 +1,11 @@
 import Foundation
 import KeychainAccess
 
+extension Notification.Name {
+    /// 401 응답으로 토큰이 무효화됐을 때 — AuthViewModel이 isAuthenticated를 false로 동기화
+    static let raccontoTokenInvalidated = Notification.Name("raccontoTokenInvalidated")
+}
+
 @Observable
 class RaccontoAPI {
     static let shared = RaccontoAPI()
@@ -55,6 +60,7 @@ class RaccontoAPI {
                 break
             case 401:
                 self.token = nil
+                NotificationCenter.default.post(name: .raccontoTokenInvalidated, object: nil)
                 throw APIError.unauthorized
             case 404:
                 throw APIError.notFound
@@ -130,6 +136,7 @@ class RaccontoAPI {
                 break
             case 401:
                 self.token = nil
+                NotificationCenter.default.post(name: .raccontoTokenInvalidated, object: nil)
                 throw APIError.unauthorized
             case 404:
                 throw APIError.notFound

@@ -38,6 +38,8 @@ class NotesViewModel {
             let req = NoteUpdateRequest(content: content, noteType: noteType, isPinned: isPinned)
             let updated: Note = try await api.request("/notes/\(noteId)", method: "PUT", body: req)
             if let idx = notes.firstIndex(where: { $0.id == noteId }) { notes[idx] = updated }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -45,6 +47,8 @@ class NotesViewModel {
         notes.removeAll { $0.id == noteId }
         do {
             try await api.requestVoid("/notes/\(noteId)", method: "DELETE")
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 

@@ -96,19 +96,9 @@ struct ChapterPickerSheet: View {
                     return
                 }
 
-                var found: Set<String> = []
-                await withTaskGroup(of: (String, Bool).self) { group in
-                    for chapter in chapters {
-                        group.addTask {
-                            let items: [ChapterItem]? = try? await api.request("/chapters/\(chapter.id)/items")
-                            let has = items?.contains { $0.photoId == pid } ?? false
-                            return (chapter.id, has)
-                        }
-                    }
-                    for await (id, has) in group where has {
-                        found.insert(id)
-                    }
-                }
+                // 백엔드 /photos/{id}/chapters — 단일 호출로 챕터 소속 조회 (P-1 근본 해결)
+                let ids: [String] = (try? await api.request("/photos/\(pid)/chapters")) ?? []
+                let found = Set(ids)
                 addedChapterIds = found
                 Self.cacheQueue.sync { Self.membershipCache[pid] = found }
             }

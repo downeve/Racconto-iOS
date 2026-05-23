@@ -86,7 +86,9 @@ struct MarkdownTextEditor: UIViewRepresentable {
 
     // 부모 ScrollView 폭에 맞춰 UITextView 크기 결정
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
-        let width = proposal.width ?? UIScreen.main.bounds.width
+        // iOS 16+ UIScreen.main deprecated, Split View/멀티윈도우에서 잘못된 폭 반환.
+        // 부모가 폭 미제안 시(드뭄) 0 → 후속 layout pass에서 정상 폭 받아 재계산.
+        let width = proposal.width ?? 0
         uiView.frame.size.width = width
         let fittingSize = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
         return CGSize(width: width, height: max(300, fittingSize.height))

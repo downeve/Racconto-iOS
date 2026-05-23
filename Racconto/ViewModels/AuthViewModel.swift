@@ -22,6 +22,20 @@ class AuthViewModel: NSObject {
     override init() {
         super.init()
         isAuthenticated = api.isAuthenticated
+
+        // 401 → API 레이어가 토큰 폐기. UI 동기화를 위해 isAuthenticated를 false로 전환.
+        NotificationCenter.default.addObserver(
+            forName: .raccontoTokenInvalidated,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.isAuthenticated = false
+                self.currentUsername = nil
+                self.oauthProvider = nil
+            }
+        }
     }
 
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
@@ -48,6 +62,10 @@ class AuthViewModel: NSObject {
             projectLimit = me.projectLimit ?? 0
             photoCount = me.photoCount ?? 0
             photoLimit = me.photoLimit ?? 0
+        } catch let err as APIError {
+            // 401은 RaccontoAPI가 .raccontoTokenInvalidated 브로드캐스트로 처리.
+            // 그 외 오류만 사용자에게 표시.
+            errorMessage = err.errorDescription
         } catch {}
     }
 

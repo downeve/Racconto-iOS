@@ -46,6 +46,8 @@ class StoryViewModel {
         do {
             let items: [ChapterItem] = try await api.request("/chapters/\(chapterId)/items")
             itemsByChapter[chapterId] = items
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -75,6 +77,8 @@ class StoryViewModel {
             let req = ChapterUpdateRequest(title: title, description: description?.isEmpty == true ? nil : description)
             let updated: Chapter = try await api.request("/chapters/\(id)", method: "PUT", body: req)
             if let idx = chapters.firstIndex(where: { $0.id == id }) { chapters[idx] = updated }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -124,6 +128,8 @@ class StoryViewModel {
             let req = ChapterReorderRequest(chapterIds: ids, parentId: parentId)
             try await api.requestVoid("/chapters/reorder", method: "PUT", body: req)
             if !projectId.isEmpty { await load(projectId: projectId) }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -207,6 +213,8 @@ class StoryViewModel {
                 items[idx] = updated
                 itemsByChapter[chapterId] = items
             }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -214,6 +222,8 @@ class StoryViewModel {
         do {
             try await api.requestVoid("/chapters/\(chapterId)/items/\(itemId)", method: "DELETE")
             itemsByChapter[chapterId]?.removeAll { $0.id == itemId }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -222,6 +232,8 @@ class StoryViewModel {
             let req = MoveToBlockRequest(itemId: itemId, targetBlockId: targetBlockId)
             try await api.requestVoid("/chapters/\(chapterId)/items/move-to-block", method: "PUT", body: req)
             await loadItems(for: chapterId)
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -230,6 +242,8 @@ class StoryViewModel {
             let req = BlockReorderRequest(itemIds: itemIds)
             try await api.requestVoid("/chapters/\(chapterId)/blocks/\(blockId)/reorder", method: "PUT", body: req)
             await loadItems(for: chapterId)
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -243,6 +257,8 @@ class StoryViewModel {
                 }
                 itemsByChapter[chapterId] = items
             }
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -296,6 +312,8 @@ class StoryViewModel {
             try await api.requestVoid("/chapters/\(chapterId)/side-by-side", method: "PUT",
                 body: Body(textItemId: textItemId, photoBlockId: photoBlockId, position: position))
             await reloadAllItems()
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -305,6 +323,8 @@ class StoryViewModel {
             try await api.requestVoid("/chapters/\(chapterId)/side-by-side/cancel", method: "PUT",
                 body: Body(textItemId: textItemId))
             await reloadAllItems()
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 
@@ -325,6 +345,8 @@ class StoryViewModel {
         do {
             try await api.requestVoid("/chapters/\(chapterId)/items/bulk-sync", method: "PUT", body: BulkSyncRequest(items: syncItems))
             await loadItems(for: chapterId)
+        } catch let err as APIError {
+            errorMessage = err.errorDescription
         } catch {}
     }
 }

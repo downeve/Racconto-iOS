@@ -126,18 +126,6 @@ struct TrashView: View {
                                 .clipped()
                         )
                         .clipped()
-                        .contextMenu {
-                            Button {
-                                Task { await viewModel.restore(photo: photo) }
-                            } label: {
-                                Label("복구", systemImage: "arrow.uturn.backward")
-                            }
-                            Button(role: .destructive) {
-                                Task { await viewModel.permanentDelete(photo: photo) }
-                            } label: {
-                                Label("영구 삭제", systemImage: "trash.fill")
-                            }
-                        }
                         .onTapGesture {
                             let idx = group.photos.firstIndex(where: { $0.id == photo.id }) ?? 0
                             lightboxData = LightboxData(photos: group.photos, index: idx)
