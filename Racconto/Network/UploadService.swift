@@ -24,7 +24,12 @@ class UploadService {
     private var isProcessing = false
     private let api = RaccontoAPI.shared
     private let container: ModelContainer = {
-        try! ModelContainer(for: UploadQueueItem.self)
+        do {
+            return try ModelContainer(for: UploadQueueItem.self)
+        } catch {
+            // SwiftData 스토어 초기화 실패는 복구 불가 — 앱이 큐를 유지할 수 없으므로 명시적 중단.
+            fatalError("UploadQueueItem ModelContainer 생성 실패: \(error)")
+        }
     }()
     private var context: ModelContext { container.mainContext }
 
@@ -79,19 +84,25 @@ class UploadService {
             predicate: #Predicate { $0.status == "pending" },
             sortBy: [SortDescriptor(\.createdAt)]
         )
-        do {
-            let items = try context.fetch(descriptor)
-            #if DEBUG
-            print("[UploadService] pending 항목 \(items.count)개 조회됨")
-            #endif
-            guard !items.isEmpty else { pendingCount = 0; return }
-            await processItems(items)
-        } catch {
-            #if DEBUG
-            print("[UploadService] fetch 실패: \(error)")
-            #endif
-            pendingCount = 0
-            return
+
+        // 처리 중 새로 enqueue된 항목 누락 방지 — 비어있을 때까지 루프.
+        // 무한루프 안전장치: 최대 10회 반복 (현실적으로 한 세션 내 도달 불가).
+        var loopGuard = 0
+        while loopGuard < 10 {
+            loopGuard += 1
+            do {
+                let items = try context.fetch(descriptor)
+                #if DEBUG
+                print("[UploadService] pending 항목 \(items.count)개 조회됨 (반복 \(loopGuard))")
+                #endif
+                if items.isEmpty { break }
+                await processItems(items)
+            } catch {
+                #if DEBUG
+                print("[UploadService] fetch 실패: \(error)")
+                #endif
+                break
+            }
         }
 
         let remaining = (try? context.fetch(
@@ -196,10 +207,17 @@ class UploadService {
         req.httpMethod = "POST"
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
+        // multipart boundary는 ASCII만 사용 — utf8 인코딩 실패 가능성 없음. 규칙상 옵셔널 바인딩.
+        let head = "--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n"
+        let tail = "\r\n--\(boundary)--\r\n"
+        guard let headData = head.data(using: .utf8),
+              let tailData = tail.data(using: .utf8) else {
+            throw URLError(.cannotDecodeRawData)
+        }
         var body = Data()
-        body.append("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(headData)
         body.append(data)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append(tailData)
         req.httpBody = body
 
         let (_, response) = try await URLSession.shared.data(for: req)

@@ -17,6 +17,10 @@ class StoryViewModel {
     func toggleExpanded(_ chapterId: String) {
         if expandedChapterId == chapterId { return }
         expandedChapterId = chapterId
+        // 아직 로드되지 않은 챕터를 펼치면 즉시 fetch (lazy load 경로 보강).
+        if itemsByChapter[chapterId] == nil {
+            Task { await loadItems(for: chapterId) }
+        }
     }
 
     func blocks(for chapterId: String) -> [Block] {
@@ -31,12 +35,23 @@ class StoryViewModel {
         defer { isLoading = false }
         do {
             chapters = try await api.request("/chapters/?project_id=\(projectId)")
-            await withTaskGroup(of: Void.self) { group in
-                for chapter in chapters {
-                    group.addTask { await self.loadItems(for: chapter.id) }
+            // 첫 챕터를 즉시 펼침 + 해당 챕터 아이템만 우선 로드 → 진입 체감속도 개선.
+            // 나머지 챕터 아이템은 백그라운드로 점진 로드 (Preview 진입 시 이미 캐시되어 있음).
+            let firstChapterId = chapterTree.first?.parent.id
+            expandedChapterId = firstChapterId
+            if let firstChapterId {
+                await loadItems(for: firstChapterId)
+            }
+            // 나머지 챕터 lazy 로드 — load() 반환 후 백그라운드에서 진행.
+            let remainingIds = chapters.map(\.id).filter { $0 != firstChapterId }
+            Task { [weak self] in
+                guard let self else { return }
+                await withTaskGroup(of: Void.self) { group in
+                    for id in remainingIds {
+                        group.addTask { await self.loadItems(for: id) }
+                    }
                 }
             }
-            expandedChapterId = chapterTree.first?.parent.id
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {}
@@ -187,10 +202,17 @@ class StoryViewModel {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        // multipart boundary는 ASCII만 사용 — utf8 인코딩 실패 가능성 없음. 규칙상 옵셔널 바인딩.
+        let head = "--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n"
+        let tail = "\r\n--\(boundary)--\r\n"
+        guard let headData = head.data(using: .utf8),
+              let tailData = tail.data(using: .utf8) else {
+            throw URLError(.cannotDecodeRawData)
+        }
         var body = Data()
-        body.append("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(headData)
         body.append(data)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append(tailData)
         req.httpBody = body
         let (_, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {

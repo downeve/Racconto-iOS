@@ -6,7 +6,7 @@ struct LandingView: View {
     @State private var showLogin = false
     @Environment(\.openURL) private var openURL
 
-    private let registerURL = URL(string: "https://racconto.app/register")!
+    private static let registerURLString = "https://racconto.app/register"
     private let pageCount = 4
 
     var body: some View {
@@ -299,7 +299,7 @@ struct LandingView: View {
 
             // CTA
             Button {
-                openURL(registerURL)
+                if let url = URL(string: Self.registerURLString) { openURL(url) }
             } label: {
                 Text("Racconto 시작하기")
                     .font(.body)

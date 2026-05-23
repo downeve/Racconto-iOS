@@ -110,12 +110,8 @@ struct LightboxView: View {
                     .padding(.horizontal, 8)
             }
             Spacer()
-            Button { } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-            }
+            // 우측 ellipsis 메뉴는 미구현 — 좌측 chevron과 균형 위한 invisible spacer 유지.
+            Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)

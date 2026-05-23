@@ -129,14 +129,10 @@ struct PortfolioProjectDetailView: View {
                     .lineLimit(1)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 12) {
-                    Button { fontMenuOpen.toggle() } label: {
-                        Text("Aa")
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                    Button { } label: {
-                        Image(systemName: "bookmark")
-                    }
+                // 북마크는 미구현 — 구현 시 함께 추가.
+                Button { fontMenuOpen.toggle() } label: {
+                    Text("Aa")
+                        .font(.system(size: 15, weight: .semibold))
                 }
             }
             ToolbarItem(placement: .bottomBar) {

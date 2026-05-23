@@ -19,9 +19,9 @@ struct RootView: View {
     var body: some View {
         if authViewModel.isAuthenticated {
             if sizeClass == .regular {
-                iPadRootView()
+                PadRootView()
             } else {
-                iPhoneRootView()
+                PhoneRootView()
             }
         } else {
             LandingView(authViewModel: authViewModel)

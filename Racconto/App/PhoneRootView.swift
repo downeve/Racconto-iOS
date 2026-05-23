@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct iPhoneRootView: View {
+struct PhoneRootView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @State private var listVM = ProjectListViewModel()
 

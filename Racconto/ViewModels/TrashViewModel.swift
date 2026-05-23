@@ -38,10 +38,10 @@ class TrashViewModel {
             var groups: [String: PhotoGroup] = [:]
             for photo in deletedPhotos {
                 let title = projectMap[photo.projectId] ?? "알 수 없는 프로젝트"
-                if groups[photo.projectId] == nil {
-                    groups[photo.projectId] = PhotoGroup(id: photo.projectId, projectTitle: title, photos: [])
-                }
-                groups[photo.projectId]!.photos.append(photo)
+                var group = groups[photo.projectId]
+                    ?? PhotoGroup(id: photo.projectId, projectTitle: title, photos: [])
+                group.photos.append(photo)
+                groups[photo.projectId] = group
             }
             photoGroups = groups.values.sorted { $0.projectTitle < $1.projectTitle }
         } catch let err as APIError {

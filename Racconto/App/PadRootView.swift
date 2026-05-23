@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct iPadRootView: View {
+struct PadRootView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @State private var listVM = ProjectListViewModel()
     @State private var selectedProject: Project? = nil

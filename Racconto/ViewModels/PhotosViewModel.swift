@@ -16,14 +16,26 @@ enum PhotoSortOrder: String { case asc, desc }
 @MainActor
 @Observable
 class PhotosViewModel {
-    var photos: [Photo] = []
+    var photos: [Photo] = [] {
+        didSet { recomputeFiltered() }
+    }
     var isLoading = false
     var errorMessage: String?
-    var ratingFilter: Int? = nil
-    var colorFilter: String? = nil
-    var folderFilter: String? = nil
-    var sortBy: PhotoSortBy
-    var sortOrder: PhotoSortOrder
+    var ratingFilter: Int? = nil { didSet { recomputeFiltered() } }
+    var colorFilter: String? = nil { didSet { recomputeFiltered() } }
+    var folderFilter: String? = nil { didSet { recomputeFiltered() } }
+    var sortBy: PhotoSortBy {
+        didSet {
+            UserDefaults.standard.set(sortBy.rawValue, forKey: "photo_sort_by")
+            recomputeFiltered()
+        }
+    }
+    var sortOrder: PhotoSortOrder {
+        didSet {
+            UserDefaults.standard.set(sortOrder.rawValue, forKey: "photo_sort_order")
+            recomputeFiltered()
+        }
+    }
 
     init() {
         let savedSortBy = UserDefaults.standard.string(forKey: "photo_sort_by")
@@ -39,7 +51,11 @@ class PhotosViewModel {
         Array(Set(photos.compactMap(\.folder))).sorted()
     }
 
-    var filteredPhotos: [Photo] {
+    /// 정렬·필터 결과 캐시. 의존 프로퍼티(photos, *Filter, sort*) didSet에서 갱신.
+    /// 매 뷰 갱신마다 O(N log N) 재계산되던 computed property를 stored로 전환.
+    private(set) var filteredPhotos: [Photo] = []
+
+    private func recomputeFiltered() {
         var result = photos.filter { photo in
             if let r = ratingFilter, photo.rating != r { return false }
             if let c = colorFilter, photo.colorLabel != c { return false }
@@ -62,7 +78,7 @@ class PhotosViewModel {
                 return sortOrder == .asc ? a < b : a > b
             }
         }
-        return result
+        filteredPhotos = result
     }
 
     private let api = RaccontoAPI.shared

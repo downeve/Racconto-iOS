@@ -11,6 +11,19 @@ struct NoteCard: View {
     var viewModel: NotesViewModel
     @State private var showEditor = false
 
+    /// iOS 네이티브 AttributedString(markdown:)는 인라인 마크다운(볼드/이탤릭/링크/코드)만 지원.
+    /// 헤딩(`#`)이나 리스트는 일반 텍스트로 보이지만 카드 미리보기 용도엔 충분.
+    private var previewText: Text {
+        let raw = note.content
+        if let attr = try? AttributedString(
+            markdown: raw,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            return Text(attr)
+        }
+        return Text(raw)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // 헤더: 카테고리 배지 + 핀 + 날짜
@@ -37,10 +50,13 @@ struct NoteCard: View {
                     .foregroundStyle(.tertiary)
             }
 
-            Markdown(applyHardBreaks(note.content))
-                .markdownTextStyle { FontSize(.em(0.9)) }
-                .frame(maxWidth: .infinity, maxHeight: 64, alignment: .topLeading)
-                .clipped()
+            // 미리보기는 줄 단위 truncate가 자연스러움. iOS 네이티브 마크다운(인라인만)으로 전환.
+            // 전체 마크다운 렌더(헤딩 크기 등)는 편집창에서 처리.
+            previewText
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))

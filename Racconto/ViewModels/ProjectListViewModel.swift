@@ -50,7 +50,14 @@ class ProjectListViewModel {
             do {
                 let req = ProjectReorderRequest(projectIds: ids)
                 let updated: [Project] = try await api.request("/projects/reorder", method: "PUT", body: req)
-                projects = updated
+                // 응답이 도착하는 사이 추가/삭제된 프로젝트(다른 경로) 분실 방지 — id 기준 머지.
+                // 1) updated에 있는 id만 순서대로 채움 (서버 권위)
+                // 2) updated에 없지만 로컬에 있는 id는 뒤에 append (방금 추가된 신규 프로젝트 등)
+                let updatedIds = Set(updated.map(\.id))
+                let extras = projects.filter { !updatedIds.contains($0.id) }
+                projects = updated + extras
+            } catch let err as APIError {
+                errorMessage = err.errorDescription
             } catch {}
         }
     }

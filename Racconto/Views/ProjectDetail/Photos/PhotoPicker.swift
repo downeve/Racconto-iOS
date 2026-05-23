@@ -23,9 +23,13 @@ struct PhotoPicker: UIViewControllerRepresentable {
         init(_ parent: PhotoPicker) { self.parent = parent }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)
-            guard !results.isEmpty else { return }
+            guard !results.isEmpty else {
+                picker.dismiss(animated: true)
+                return
+            }
 
+            // 로딩 완료 후 dismiss — 사용자가 picker 닫힘 직후 빈 갤러리를 보고 다른 동작을 하다
+            // 뒤늦게 onComplete가 트리거되는 race 방지.
             Task {
                 var items: [(UIImage, Data, String)] = []
                 for result in results {
@@ -37,7 +41,10 @@ struct PhotoPicker: UIViewControllerRepresentable {
                         items.append((image, data, "\(filename).jpg"))
                     }
                 }
-                await MainActor.run { parent.onComplete(items) }
+                await MainActor.run {
+                    picker.dismiss(animated: true)
+                    parent.onComplete(items)
+                }
             }
         }
 
