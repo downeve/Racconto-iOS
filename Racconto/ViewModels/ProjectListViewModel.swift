@@ -10,6 +10,20 @@ class ProjectListViewModel {
 
     private let api = RaccontoAPI.shared
 
+    init() {
+        // 프로젝트 메타데이터 변경 시 목록 갱신 (커버 설정, 제목 편집 등).
+        NotificationCenter.default.addObserver(
+            forName: .raccontoProjectUpdated,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                Task { await self.load() }
+            }
+        }
+    }
+
     func load() async {
         isLoading = true
         defer { isLoading = false }

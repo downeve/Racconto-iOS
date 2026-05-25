@@ -167,6 +167,12 @@ class PhotosViewModel {
         do {
             let req = ProjectUpdateRequest(coverImageUrl: imageUrl)
             try await api.requestVoid("/projects/\(projectId)", method: "PUT", body: req)
+            // 프로젝트 목록의 커버 이미지 갱신을 위해 브로드캐스트.
+            NotificationCenter.default.post(
+                name: .raccontoProjectUpdated,
+                object: nil,
+                userInfo: ["projectId": projectId]
+            )
         } catch let err as APIError {
             errorMessage = err.errorDescription
         } catch {}

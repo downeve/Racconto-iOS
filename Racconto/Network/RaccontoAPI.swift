@@ -4,6 +4,9 @@ import KeychainAccess
 extension Notification.Name {
     /// 401 응답으로 토큰이 무효화됐을 때 — AuthViewModel이 isAuthenticated를 false로 동기화
     static let raccontoTokenInvalidated = Notification.Name("raccontoTokenInvalidated")
+    /// 프로젝트 메타데이터(커버/제목/설명 등)가 백엔드에서 변경됐을 때 — 목록 뷰가 갱신.
+    /// userInfo["projectId"]: String?
+    static let raccontoProjectUpdated = Notification.Name("raccontoProjectUpdated")
 }
 
 @Observable
