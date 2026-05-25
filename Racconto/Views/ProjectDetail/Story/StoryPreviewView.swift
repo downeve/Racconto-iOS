@@ -85,7 +85,7 @@ struct StoryPreviewView: View {
             sideBySideView(block, allPhotos: allPhotosInChapter)
         } else if block.photoItems.isEmpty {
             if let text = block.textItem?.textContent {
-                Markdown(preprocessMarkdown(text))
+                Text(MarkdownInline.attributed(text))
                     .font(.custom("Georgia", size: 16))
             }
         } else {
@@ -144,7 +144,8 @@ struct StoryPreviewView: View {
                     .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
             }
         }
-        let textCol = Markdown(preprocessMarkdown(text)).frame(maxWidth: .infinity, alignment: .leading)
+        let textCol = Text(MarkdownInline.attributed(text))
+            .frame(maxWidth: .infinity, alignment: .leading)
 
         if isTextLeft {
             VStack { textCol }

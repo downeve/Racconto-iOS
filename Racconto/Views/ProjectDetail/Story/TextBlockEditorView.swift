@@ -141,7 +141,8 @@ struct TextBlockEditorView: View {
 
                 if showPreview {
                     ScrollView {
-                        Markdown(preprocessMarkdown(draft.isEmpty ? "*내용을 입력하세요*" : draft))
+                        Text(MarkdownInline.attributed(draft.isEmpty ? "*내용을 입력하세요*" : draft))
+                            .font(.system(.title3, design: .serif))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(24)
                     }

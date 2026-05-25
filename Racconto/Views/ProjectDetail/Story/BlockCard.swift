@@ -174,11 +174,9 @@ struct BlockCard: View {
                     .foregroundStyle(StoryTokens.faint)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Markdown(preprocessMarkdown(content))
-                    .markdownTextStyle {
-                        FontFamily(.custom("Georgia"))
-                        FontSize(15)
-                    }
+                // MarkdownUI 한글 emphasis flanking 회피용 자체 인라인 렌더
+                Text(MarkdownInline.attributed(content))
+                    .font(.custom("Georgia", size: 15))
                     .lineLimit(4)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -309,12 +307,8 @@ struct StackedSideBySideBlock: View {
                     .font(.storyBodySerif)
                     .foregroundStyle(StoryTokens.faint)
             } else {
-                // 단일 텍스트 블록과 동일하게 마크다운 렌더 (preprocessMarkdown으로 right-flanking 보정)
-                Markdown(preprocessMarkdown(content))
-                    .markdownTextStyle {
-                        FontFamily(.custom("Georgia"))
-                        FontSize(15)
-                    }
+                Text(MarkdownInline.attributed(content))
+                    .font(.custom("Georgia", size: 15))
                     .foregroundStyle(StoryTokens.inkSoft)
                     .lineLimit(sizeClass == .regular ? 8 : 3)
             }
