@@ -7,8 +7,17 @@ struct PublicPortfolioView: View {
     @State private var submittedUsername = ""
     @State private var meLoaded = false
     @State private var meLoading = false
+    @State private var showExplore = false
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.colorScheme) private var colorScheme
+
+    /// 외부에서 username을 미리 주입할 때 사용 (ExploreView → 카드 탭 진입).
+    /// nil이면 본인 username 또는 검색 입력 사용.
+    let presetUsername: String?
+
+    init(presetUsername: String? = nil) {
+        self.presetUsername = presetUsername
+    }
 
     // 웹 bg-canvas(크림) / bg-d-bg(다크) 와 동일한 시스템 연동 배경색
     private var portfolioBg: Color {
@@ -20,6 +29,12 @@ struct PublicPortfolioView: View {
     var body: some View {
         content
             .task {
+                // preset username (Explore 진입)이 있으면 우선 처리.
+                if let preset = presetUsername, !preset.isEmpty, submittedUsername != preset {
+                    submittedUsername = preset
+                    await viewModel.load(username: preset)
+                    return
+                }
                 // fetchMe는 최초 1회만 실행
                 guard !meLoaded else { return }
                 meLoaded = true
@@ -37,6 +52,9 @@ struct PublicPortfolioView: View {
                 guard meLoaded, !submittedUsername.isEmpty, !viewModel.isLoading else { return }
                 Task { await viewModel.load(username: submittedUsername) }
             }
+            .navigationDestination(isPresented: $showExplore) {
+                ExploreView()
+            }
     }
 
     @ViewBuilder
@@ -48,9 +66,9 @@ struct PublicPortfolioView: View {
                 .toolbarBackground(.visible, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
-                        Button("다른 사용자") {
-                            viewModel.portfolio = nil
-                            submittedUsername = ""
+                        // preset username으로 진입한 경우엔 자동 navigation back 사용 — 버튼 숨김.
+                        if presetUsername == nil {
+                            Button("탐색") { showExplore = true }
                         }
                     }
                 }
@@ -98,6 +116,13 @@ struct PublicPortfolioView: View {
                 .disabled(usernameInput.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 32)
+            // 직접 입력 외에 탐색으로도 진입 가능
+            Button {
+                showExplore = true
+            } label: {
+                Label("사진가 탐색", systemImage: "magnifyingglass")
+            }
+            .buttonStyle(.bordered)
             if let err = viewModel.errorMessage {
                 Text(err)
                     .font(.caption)
