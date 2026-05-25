@@ -10,6 +10,8 @@ struct UserSettings: Codable {
     var colorLabelBlue: String?
     var photoSortBy: String?
     var photoSortOrder: String?
+    /// 라이트박스 EXIF 패널에서 파일명 표시 여부 ('true'/'false' 문자열, 백엔드 setting 키와 동일)
+    var defaultShowFilename: String?
 }
 
 struct SettingsUpdateRequest: Encodable {
@@ -64,6 +66,9 @@ struct SettingsView: View {
     @State private var photoSortBy: PhotoSortBy = .default
     @State private var photoSortOrder: PhotoSortOrder = .asc
     @State private var photoSortSaved = false
+
+    // EXIF 패널 — 파일명 표시 여부
+    @State private var showFilename: Bool = false
 
     // 비밀번호
     @State private var currentPassword = ""
@@ -192,6 +197,18 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("사진 기본 정렬")
+            }
+
+            // MARK: 사진 표시 옵션
+            Section {
+                Toggle("EXIF 패널에 파일명 표시", isOn: $showFilename)
+                    .onChange(of: showFilename) { _, newVal in
+                        Task { await saveShowFilename(newVal) }
+                    }
+            } header: {
+                Text("사진 표시")
+            } footer: {
+                Text("라이트박스에서 사진 정보를 열었을 때 원본 파일명을 함께 표시합니다.")
             }
 
             // MARK: 컬러 레이블
@@ -329,6 +346,18 @@ struct SettingsView: View {
             labelBlue   = settings?.colorLabelBlue   ?? ""
             photoSortBy    = PhotoSortBy(rawValue: settings?.photoSortBy ?? "") ?? .default
             photoSortOrder = PhotoSortOrder(rawValue: settings?.photoSortOrder ?? "") ?? .asc
+            showFilename   = (settings?.defaultShowFilename ?? "false") == "true"
+            // EXIFPanel이 API 호출 없이 빠르게 읽도록 UserDefaults에 미러링.
+            UserDefaults.standard.set(showFilename, forKey: "photo_show_filename")
+        } catch {}
+    }
+
+    private func saveShowFilename(_ value: Bool) async {
+        do {
+            struct ShowFilenameRequest: Encodable { var defaultShowFilename: String }
+            let req = ShowFilenameRequest(defaultShowFilename: value ? "true" : "false")
+            try await api.requestVoid("/settings/batch/update", method: "PUT", body: req)
+            UserDefaults.standard.set(value, forKey: "photo_show_filename")
         } catch {}
     }
 

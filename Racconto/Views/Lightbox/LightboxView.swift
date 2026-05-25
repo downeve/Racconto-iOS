@@ -355,8 +355,18 @@ private struct ZoomablePhotoView: View {
 struct EXIFPanel: View {
     let photo: Photo
 
+    /// 설정 페이지의 "EXIF 패널에 파일명 표시" 토글 값.
+    /// 변경 시 UserDefaults에 즉시 미러링되어 API 호출 없이 빠르게 읽음.
+    private var showFilename: Bool {
+        UserDefaults.standard.bool(forKey: "photo_show_filename")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
+            // 파일명 — EXIF 위 첫 행. 설정 토글로 표시 여부 제어.
+            if showFilename, let filename = photo.originalFilename, !filename.isEmpty {
+                exifRow("doc", filename)
+            }
             if let camera = photo.camera { exifRow("camera", camera) }
             if let lens = photo.lens { exifRow("camera.aperture", lens) }
             HStack(spacing: 16) {
@@ -376,6 +386,10 @@ struct EXIFPanel: View {
     }
 
     private func exifRow(_ icon: String, _ text: String) -> some View {
-        Label(text, systemImage: icon).font(.caption).foregroundStyle(.white)
+        Label(text, systemImage: icon)
+            .font(.caption)
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .truncationMode(.middle)
     }
 }
