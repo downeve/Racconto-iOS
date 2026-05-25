@@ -110,6 +110,36 @@ struct PublicPortfolioView: View {
 
     @ViewBuilder
     private func portfolioContent(_ portfolio: PortfolioResponse) -> some View {
+        if portfolio.projects.isEmpty {
+            emptyPortfolio
+        } else {
+            portfolioGrid(portfolio)
+        }
+    }
+
+    // 공개 프로젝트 없을 때 안내 — 본인 계정에서 자주 발생
+    private var emptyPortfolio: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 56))
+                .foregroundStyle(.secondary)
+            Text("공개된 프로젝트가 없습니다.")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text("프로젝트 편집에서 '포트폴리오 공개'를\n켜면 여기에 표시됩니다.")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(portfolioBg)
+    }
+
+    @ViewBuilder
+    private func portfolioGrid(_ portfolio: PortfolioResponse) -> some View {
         GeometryReader { geo in
             let cols = sizeClass == .regular ? (geo.size.width > 800 ? 3 : 2) : 1
             let gridCols = Array(repeating: GridItem(.flexible(), spacing: 16), count: cols)

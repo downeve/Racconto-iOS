@@ -12,7 +12,9 @@ struct ProjectListView: View {
 
     var body: some View {
         Group {
-            if isSidebar {
+            if viewModel.projects.isEmpty && !viewModel.isLoading {
+                emptyState
+            } else if isSidebar {
                 sidebarList
             } else {
                 phoneGrid
@@ -54,6 +56,33 @@ struct ProjectListView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+    }
+
+    // 빈 상태 — 신규 가입자 또는 모든 프로젝트 삭제 후
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "rectangle.stack")
+                .font(.system(size: 56))
+                .foregroundStyle(.secondary)
+            Text("아직 프로젝트가 없습니다.")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text("오른쪽 위 + 버튼으로\n새 프로젝트를 만들어 보세요.")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+            Button {
+                showForm = true
+            } label: {
+                Label("새 프로젝트", systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 8)
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // iPad 사이드바: 1열 리스트
