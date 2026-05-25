@@ -15,7 +15,9 @@ struct EXIFData {
 }
 
 enum EXIFExtractor {
-    static func extract(from data: Data) -> EXIFData {
+    /// Swift 6 default isolation 회피 — 순수 유틸이므로 nonisolated 명시해
+    /// Task.detached 등 non-isolated 컨텍스트에서 호출 가능.
+    nonisolated static func extract(from data: Data) -> EXIFData {
         var result = EXIFData()
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any]

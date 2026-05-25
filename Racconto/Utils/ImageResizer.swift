@@ -1,7 +1,9 @@
 import UIKit
 
 enum ImageResizer {
-    static func resize(_ image: UIImage, maxSize: Int = 3200) -> Data {
+    /// Swift 6 default isolation 회피 — 순수 유틸이므로 nonisolated 명시해
+    /// Task.detached 등 non-isolated 컨텍스트에서 호출 가능.
+    nonisolated static func resize(_ image: UIImage, maxSize: Int = 3200) -> Data {
         let w = image.size.width
         let h = image.size.height
         let scale = CGFloat(maxSize) / max(w, h)
