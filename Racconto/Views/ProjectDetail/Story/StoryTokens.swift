@@ -45,6 +45,22 @@ enum StoryTokens {
 func preprocessMarkdown(_ text: String) -> String {
     var result = text
 
+    // Bold + Italic 결합: ***text*** → **_text_**
+    // MarkdownUI의 CommonMark 파서가 비라틴 문자(한글 등)를 감싼 ***...***를
+    // 일관되게 처리하지 못해 italic만 적용되는 케이스가 있음.
+    // **_..._** 형태(bold 안 italic underscore)로 분해하면 안정적으로 렌더됨.
+    // 후속 bold/italic ZWNJ 패턴이 이 변환 결과를 잘못 매칭하지 않도록 가장 먼저 실행.
+    if let triplePattern = try? NSRegularExpression(
+        pattern: "\\*\\*\\*([^*]+?)\\*\\*\\*",
+        options: [.dotMatchesLineSeparators]
+    ) {
+        result = triplePattern.stringByReplacingMatches(
+            in: result,
+            range: NSRange(result.startIndex..., in: result),
+            withTemplate: "**_$1_**"
+        )
+    }
+
     // Bold: (**...구두점**) → (**...구두점\u{200C}**)
     // [^*]+? : 내용에 * 포함 금지 — 인접 bold/italic 마커를 넘나드는 매칭 방지
     if let boldPattern = try? NSRegularExpression(

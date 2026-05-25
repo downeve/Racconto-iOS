@@ -303,12 +303,23 @@ struct StackedSideBySideBlock: View {
 
     private var textSection: some View {
         let content = block.textItem?.textContent ?? ""
-        return Text(content.isEmpty ? "텍스트 없음" : content)
-            .lineLimit(sizeClass == .regular ? 8 : 3)
-            .font(.storyBodySerif)
-            .lineSpacing(5)
-            .foregroundStyle(content.isEmpty ? StoryTokens.faint : StoryTokens.inkSoft)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        return Group {
+            if content.isEmpty {
+                Text("텍스트 없음")
+                    .font(.storyBodySerif)
+                    .foregroundStyle(StoryTokens.faint)
+            } else {
+                // 단일 텍스트 블록과 동일하게 마크다운 렌더 (preprocessMarkdown으로 right-flanking 보정)
+                Markdown(preprocessMarkdown(content))
+                    .markdownTextStyle {
+                        FontFamily(.custom("Georgia"))
+                        FontSize(15)
+                    }
+                    .foregroundStyle(StoryTokens.inkSoft)
+                    .lineLimit(sizeClass == .regular ? 8 : 3)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var photoSection: some View {
