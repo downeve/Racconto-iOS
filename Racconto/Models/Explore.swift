@@ -7,10 +7,10 @@ enum CameraType: String, CaseIterable, Codable {
 
     var label: String {
         switch self {
-        case .film:    return "필름"
-        case .digital: return "디지털"
-        case .mobile:  return "모바일"
-        case .mixed:   return "혼합"
+        case .film:    return "FILM"
+        case .digital: return "DIGITAL"
+        case .mobile:  return "MOBILE"
+        case .mixed:   return "MIXED"
         }
     }
 }

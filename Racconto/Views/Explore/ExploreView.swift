@@ -290,6 +290,17 @@ struct ExploreView: View {
 private struct ExplorePortfolioCard: View {
     let item: ExploreItem
 
+    /// 카메라 타입(있으면) + 모든 태그를 ` · ` 구분자로 단일 Text. lineLimit(1)이 적용 가능하도록
+    /// HStack 대신 String join 방식.
+    private var eyebrowText: Text {
+        var parts: [String] = []
+        if let ct = item.cameraType {
+            parts.append(ct.label)
+        }
+        parts.append(contentsOf: item.tags.map { "#\($0)" })
+        return Text(parts.joined(separator: " · "))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Color.clear
@@ -303,25 +314,15 @@ private struct ExplorePortfolioCard: View {
                 }
                 .clipped()
 
-            // eyebrow: 카메라 종류 · 태그
+            // eyebrow: 카메라 종류 · 태그 (한 줄, 길면 truncate)
             if item.cameraType != nil || !item.tags.isEmpty {
-                HStack(spacing: 6) {
-                    if let ct = item.cameraType {
-                        Text(ct.label.uppercased())
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .tracking(1.2)
-                    }
-                    if item.cameraType != nil && !item.tags.isEmpty {
-                        Text("·")
-                            .font(.system(size: 10))
-                    }
-                    if let firstTag = item.tags.first {
-                        Text("#\(firstTag)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .tracking(0.8)
-                    }
-                }
-                .foregroundStyle(.tertiary)
+                eyebrowText
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .tracking(1.0)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Text(item.title)
