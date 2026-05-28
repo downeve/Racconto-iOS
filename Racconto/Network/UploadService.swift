@@ -46,8 +46,8 @@ class UploadService {
         // 무거운 작업을 background로
         let (exif, writeOK): (EXIFData, Bool) = await Task.detached(priority: .userInitiated) {
             let exif = EXIFExtractor.extract(from: data)
-            // 원본이 JPEG면 0.92, 그 외는 0.88 (웹 정책 동일)
-            let resized = ImageResizer.resize(image, sourceIsJPEG: ImageResizer.isJPEG(data))
+            // quality는 리사이즈 여부(크기) 기준 — resize 내부에서 결정 (웹 정책 동일)
+            let resized = ImageResizer.resize(image)
             let ok = (try? resized.write(to: localURL)) != nil
             return (exif, ok)
         }.value
