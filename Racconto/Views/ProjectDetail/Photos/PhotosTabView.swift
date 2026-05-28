@@ -12,6 +12,7 @@ struct PhotosTabView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var showPicker = false
+    @State private var showDocumentPicker = false
     @State private var lightboxData: LightboxData? = nil
     @State private var showChapterPicker = false
     @State private var chapterPickerPhotoIds: [String] = []
@@ -59,7 +60,18 @@ struct PhotosTabView: View {
             }
 
             if !viewModel.isSelecting {
-                Button { showPicker = true } label: {
+                Menu {
+                    Button {
+                        showPicker = true
+                    } label: {
+                        Label("사진 보관함", systemImage: "photo.on.rectangle")
+                    }
+                    Button {
+                        showDocumentPicker = true
+                    } label: {
+                        Label("파일에서", systemImage: "folder")
+                    }
+                } label: {
                     Image(systemName: "plus")
                         .font(.title2)
                         .fontWeight(.medium)
@@ -108,20 +120,10 @@ struct PhotosTabView: View {
             LightboxView(photos: data.photos, initialIndex: data.index, viewModel: viewModel, projectId: project.id)
         }
         .sheet(isPresented: $showPicker) {
-            PhotoPicker { items in
-                // EXIF 파싱과 리사이즈가 메인 스레드를 차단하지 않도록 Task로 비동기 처리.
-                // enqueue 내부에서 detached로 무거운 작업 수행.
-                Task {
-                    for (image, data, filename) in items {
-                        await UploadService.shared.enqueue(
-                            image: image,
-                            data: data,
-                            projectId: project.id,
-                            filename: filename
-                        )
-                    }
-                }
-            }
+            PhotoPicker { items in enqueueItems(items) }
+        }
+        .sheet(isPresented: $showDocumentPicker) {
+            ImageDocumentPicker { items in enqueueItems(items) }
         }
         .sheet(isPresented: $showChapterPicker) {
             ChapterPickerSheet(projectId: project.id) { chapter, _ in
@@ -131,6 +133,21 @@ struct PhotosTabView: View {
         .onAppear { viewModel.columns = defaultColumns }
         .onChange(of: UploadService.shared.completedCount) { _, _ in
             Task { await viewModel.load(projectId: project.id) }
+        }
+    }
+
+    /// 사진 보관함/파일 picker 공통 업로드 진입.
+    /// EXIF 파싱·리사이즈는 enqueue 내부 detached에서 수행되어 메인 스레드 비차단.
+    private func enqueueItems(_ items: [(UIImage, Data, String)]) {
+        Task {
+            for (image, data, filename) in items {
+                await UploadService.shared.enqueue(
+                    image: image,
+                    data: data,
+                    projectId: project.id,
+                    filename: filename
+                )
+            }
         }
     }
 

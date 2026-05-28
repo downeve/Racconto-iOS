@@ -37,8 +37,11 @@ struct PhotoPicker: UIViewControllerRepresentable {
                     async let imageLoad = loadImage(from: result.itemProvider)
                     async let dataLoad  = loadData(from: result.itemProvider)
                     if let image = await imageLoad, let data = await dataLoad {
-                        let filename = result.itemProvider.suggestedName ?? UUID().uuidString
-                        items.append((image, data, "\(filename).jpg"))
+                        // suggestedName에 확장자(.HEIC, .png 등)가 포함될 수 있으므로 제거 후 .jpg 부착.
+                        // 실제 업로드는 ImageResizer가 JPEG로 변환하므로 확장자는 항상 .jpg가 정확.
+                        let base = result.itemProvider.suggestedName ?? UUID().uuidString
+                        let filename = (base as NSString).deletingPathExtension + ".jpg"
+                        items.append((image, data, filename))
                     }
                 }
                 await MainActor.run {
