@@ -170,8 +170,8 @@ class StoryViewModel {
                 let height = Int(item.image.size.height * item.image.scale)
                 // 1. CF 업로드 URL 획득
                 let urlResp: CFUploadURLResponse = try await api.request("/photos/cf-upload-url")
-                // 2. 리사이즈 + Cloudflare 업로드
-                let imageData = ImageResizer.resize(item.image)
+                // 2. 리사이즈 + Cloudflare 업로드 (원본 JPEG면 0.92, 그 외 0.88 — 웹 정책 동일)
+                let imageData = ImageResizer.resize(item.image, sourceIsJPEG: ImageResizer.isJPEG(item.data))
                 let imageUrl = try await uploadToCloudflare(data: imageData, uploadUrl: urlResp.uploadUrl, imageId: urlResp.id)
                 // 3. 사진 메타데이터 저장
                 let photoReq = PhotoMetadataRequest(
