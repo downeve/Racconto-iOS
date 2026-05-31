@@ -206,7 +206,8 @@ struct PublicPortfolioView: View {
                 .aspectRatio(4.0 / 5.0, contentMode: .fit)
                 .overlay {
                     if let coverUrl = project.coverImageUrl {
-                        CachedImage(url: coverUrl, variant: .grid, contentMode: .fill)
+                        // cover variant: CF Dashboard 정의된 포트폴리오 커버 전용 crop
+                        CachedImage(url: coverUrl, variant: .cover, contentMode: .fill)
                     } else {
                         Color(.secondarySystemBackground)
                     }

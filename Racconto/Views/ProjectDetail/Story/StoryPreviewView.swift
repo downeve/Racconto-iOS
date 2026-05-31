@@ -99,7 +99,8 @@ struct StoryPreviewView: View {
         if block.blockLayout == .single {
             VStack(spacing: 4) {
                 ForEach(photos) { item in
-                    CachedImage(url: item.imageUrl, variant: .public, contentMode: .fit)
+                    // 풀너비 사진 — iPhone lightboxmobile(1600) / iPad lightbox(2048)
+                    CachedImage(url: item.imageUrl, variant: lightboxVariant(for: sizeClass), contentMode: .fit)
                         .cornerRadius(2)
                         .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
                 }

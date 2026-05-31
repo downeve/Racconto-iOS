@@ -204,6 +204,7 @@ struct PortfolioBlockView: View {
 // MARK: - Single Layout Photo (ratio-aware, no cropping)
 
 private struct SingleFitPhoto: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let url: String?
     /// P-7: 서버에서 받은 정확한 비율. 있으면 첫 렌더부터 정확한 높이로 표시, 없으면 onSuccess 폴백.
     let initialRatio: CGFloat?
@@ -216,7 +217,9 @@ private struct SingleFitPhoto: View {
     }
 
     var body: some View {
-        KFImage(cfUrl(url, variant: .public))
+        // 풀너비 단독 사진 — iPhone lightboxmobile(1600) / iPad lightbox(2048).
+        // 라이트박스 진입 시에도 동일 variant 캐시 적중.
+        KFImage(cfLightboxUrl(url, sizeClass: sizeClass))
             .placeholder { Color(.secondarySystemBackground) }
             .resizable()
             .onSuccess { result in

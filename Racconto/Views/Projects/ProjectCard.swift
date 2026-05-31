@@ -40,7 +40,8 @@ struct ProjectGridCard: View {
             Color(.tertiarySystemBackground)
                 .aspectRatio(1, contentMode: .fit)
                 .overlay {
-                    CachedImage(url: project.coverImageUrl, variant: .grid, contentMode: .fill)
+                    // cover variant: CF Dashboard에 정의된 프로젝트 커버 전용 crop
+                    CachedImage(url: project.coverImageUrl, variant: .cover, contentMode: .fill)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 

@@ -3,6 +3,7 @@ import Kingfisher
 
 struct LightboxView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let photos: [Photo]
     let initialIndex: Int
     var viewModel: PhotosViewModel?
@@ -55,10 +56,10 @@ struct LightboxView: View {
                     }
                 }
 
-                // 사진 영역
+                // 사진 영역 — iPhone은 lightboxmobile(1600), iPad는 lightbox(2048)
                 TabView(selection: $currentIndex) {
                     ForEach(Array(photos.enumerated()), id: \.element.id) { idx, photo in
-                        ZoomablePhotoView(url: photo.imageUrl) {
+                        ZoomablePhotoView(url: photo.imageUrl, sizeClass: sizeClass) {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showControls.toggle()
                             }
@@ -166,7 +167,8 @@ struct LightboxView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(photos.indices, id: \.self) { i in
-                        CachedImage(url: photos[i].imageUrl, variant: .grid, contentMode: .fill)
+                        // 56×56 표시 — thumb(400)로 충분, grid 대비 약 절반 트래픽
+                        CachedImage(url: photos[i].imageUrl, variant: .thumb, contentMode: .fill)
                             .frame(width: 56, height: 56)
                             .clipped()
                             .opacity(i == currentIndex ? 1.0 : 0.55)
@@ -319,13 +321,14 @@ struct LightboxView: View {
 
 private struct ZoomablePhotoView: View {
     let url: String
+    let sizeClass: UserInterfaceSizeClass?
     let onSingleTap: () -> Void
 
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
 
     var body: some View {
-        CachedImage(url: url, variant: .public, contentMode: .fit)
+        CachedImage(url: url, variant: lightboxVariant(for: sizeClass), contentMode: .fit)
             .scaleEffect(scale)
             .gesture(
                 MagnifyGesture()
