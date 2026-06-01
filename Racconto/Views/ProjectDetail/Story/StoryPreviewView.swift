@@ -104,8 +104,9 @@ struct StoryPreviewView: View {
             VStack(spacing: 4) {
                 ForEach(photos) { item in
                     // 풀너비 사진 — iPhone lightboxmobile(1600) / iPad lightbox(2048)
+                    // 사진 모서리 0pt (웹 rounded-photo, 각진 프린트 무드)
                     CachedImage(url: item.imageUrl, variant: lightboxVariant(for: sizeClass), contentMode: .fit)
-                        .cornerRadius(Radius.btn)
+                        .cornerRadius(Radius.photo)
                         .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
                 }
             }
@@ -126,27 +127,30 @@ struct StoryPreviewView: View {
     private func sideBySideView(_ block: Block, allPhotos: [Photo]) -> some View {
         let isTextLeft = block.blockType == "side-left"
         if sizeClass == .regular {
-            HStack(alignment: .top, spacing: 16) {
-                sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
-            }
+            // iPad: 웹 PortfolioChapterItems 정책 — 사진 3 : 텍스트 2, portrait cap 적용.
+            SideBySideRow(
+                block: block,
+                isTextLeft: isTextLeft,
+                containerWidth: contentWidth,
+                onTap: { openLightbox(for: $0, allPhotos: allPhotos) }
+            )
         } else {
+            // iPhone: 1열 vstack (사진 자연 비율). 기존 모바일 정책 유지.
             VStack(alignment: .leading, spacing: 12) {
-                sideParts(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
+                sidePartsMobile(block: block, isTextLeft: isTextLeft, allPhotos: allPhotos)
             }
         }
     }
 
     @ViewBuilder
-    private func sideParts(block: Block, isTextLeft: Bool, allPhotos: [Photo]) -> some View {
+    private func sidePartsMobile(block: Block, isTextLeft: Bool, allPhotos: [Photo]) -> some View {
         let photos = block.photoItems
         let text = block.textItem?.textContent ?? ""
         let photoCol = Group {
             ForEach(photos) { item in
-                CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fill)
+                CachedImage(url: item.imageUrl, variant: .grid, contentMode: .fit)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 200)
-                    .clipped()
-                    .cornerRadius(Radius.cell)
+                    .cornerRadius(Radius.photo)
                     .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
             }
         }
@@ -231,10 +235,109 @@ private struct JustifiedPhotoGrid: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: rowHeight * ratio, height: rowHeight)
                     .clipped()
-                    .cornerRadius(Radius.btn)
+                    .cornerRadius(Radius.photo)
                     .onTapGesture { onTap(item) }
             }
         }
         .frame(height: rowHeight)
+    }
+}
+
+// MARK: - Side-by-side Row (iPad)
+//
+// 웹 PortfolioChapterItems의 SIDE 블록 정책:
+// - 사진 3 : 텍스트 2 (flex 비율, gap 24~28 사이 자동)
+// - 사진의 ratio < 1 이고 1/ratio > 1.33 (portrait 강함)이면 maxHeight = photoColWidth × 1.33 캡
+// - 캡 적용 시 텍스트와 마주보는 안쪽 가장자리로 정렬
+
+private struct SideBySideRow: View {
+    let block: Block
+    let isTextLeft: Bool
+    let containerWidth: CGFloat
+    let onTap: (ChapterItem) -> Void
+
+    /// KFImage.onSuccess로 측정한 사진 ratio (width/height).
+    @State private var ratios: [String: CGFloat] = [:]
+
+    private var photos: [ChapterItem] { block.photoItems }
+    private var text: String { block.textItem?.textContent ?? "" }
+    private var isPhotoRight: Bool { block.blockType == "side-right" }
+
+    /// portrait cap이 하나라도 발생하는지 — 발생 시 gap 24, 아니면 28.
+    private var hasCappedPortrait: Bool {
+        photos.contains { item in
+            guard let r = ratios[item.id] else { return false }
+            return r < 1 && (1 / r) > 1.33
+        }
+    }
+
+    private var sideGap: CGFloat { hasCappedPortrait ? 24 : 28 }
+    private var photoColWidth: CGFloat { max(0, (containerWidth - sideGap) * 3 / 5) }
+    private var textColWidth:  CGFloat { max(0, (containerWidth - sideGap) * 2 / 5) }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: sideGap) {
+            if isPhotoRight {
+                textCol
+                photoCol
+            } else {
+                photoCol
+                textCol
+            }
+        }
+    }
+
+    private var photoCol: some View {
+        VStack(spacing: 8) {
+            ForEach(photos) { item in
+                photoView(item)
+            }
+        }
+        .frame(width: photoColWidth, alignment: .top)
+    }
+
+    @ViewBuilder
+    private func photoView(_ item: ChapterItem) -> some View {
+        let ratio = ratios[item.id] ?? 1.5
+        let isPortraitCapped = ratio < 1 && (1 / ratio) > 1.33
+        let renderedWidth: CGFloat
+        let renderedHeight: CGFloat
+        if isPortraitCapped {
+            // maxHeight = colW × 1.33 — 세로로 너무 긴 사진을 캡.
+            renderedHeight = photoColWidth * 1.33
+            renderedWidth = renderedHeight * ratio
+        } else {
+            renderedWidth = photoColWidth
+            renderedHeight = photoColWidth / ratio
+        }
+
+        // 캡 적용 시 텍스트와 마주보는 안쪽 가장자리(사진 오른쪽이면 left, 왼쪽이면 right) 정렬.
+        let alignment: Alignment = {
+            guard isPortraitCapped else { return .center }
+            return isPhotoRight ? .leading : .trailing
+        }()
+
+        return Color.clear
+            .frame(width: photoColWidth, height: renderedHeight)
+            .overlay(alignment: alignment) {
+                KFImage(cfUrl(item.imageUrl, variant: .public))
+                    .placeholder { Color(.secondarySystemBackground) }
+                    .resizable()
+                    .onSuccess { result in
+                        let size = result.image.size
+                        if size.height > 0 {
+                            ratios[item.id] = size.width / size.height
+                        }
+                    }
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: renderedWidth, height: renderedHeight)
+                    .cornerRadius(Radius.photo)
+                    .onTapGesture { onTap(item) }
+            }
+    }
+
+    private var textCol: some View {
+        Text(MarkdownInline.attributed(text))
+            .frame(width: textColWidth, alignment: .leading)
     }
 }
