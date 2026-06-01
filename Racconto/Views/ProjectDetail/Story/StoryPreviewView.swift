@@ -81,7 +81,9 @@ struct StoryPreviewView: View {
 
     @ViewBuilder
     private func blockView(_ block: Block, allPhotosInChapter: [Photo]) -> some View {
-        if block.isSideBySide {
+        // SIDE 블록인데 사진이 모두 휴지통/삭제되어 텍스트만 남은 경우 → 단독 TEXT 블록처럼 렌더.
+        // 웹 PortfolioChapterItems / MobilePortfolioChapterItems 동일 폴백.
+        if block.isSideBySide && !block.photoItems.isEmpty {
             sideBySideView(block, allPhotos: allPhotosInChapter)
         } else if block.photoItems.isEmpty {
             if let text = block.textItem?.textContent {

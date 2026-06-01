@@ -42,6 +42,15 @@ enum MarkdownInline {
             }
             result.append(part)
         }
+
+        // 웹 `word-break: keep-all` 정책 대응 — 한글 텍스트가 글자 단위로 쪼개지지 않고
+        // 단어(어절) 단위로 줄바꿈되도록 `hangulWordPriority` 적용.
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineBreakStrategy = .hangulWordPriority
+        var attrs = AttributeContainer()
+        attrs.paragraphStyle = paragraph
+        result.mergeAttributes(attrs)
+
         return result
     }
 

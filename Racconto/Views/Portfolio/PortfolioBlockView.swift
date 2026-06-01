@@ -65,7 +65,9 @@ struct PortfolioBlockView: View {
                 })
 
             ForEach(blocks) { block in
-                if block.isSideBySide {
+                // SIDE 블록인데 사진이 모두 삭제되어 텍스트만 남은 경우 → 단독 TEXT처럼 렌더.
+                // 웹 PortfolioChapterItems / MobilePortfolioChapterItems 동일 폴백.
+                if block.isSideBySide && !block.photoItems.isEmpty {
                     sideBySideBlock(block)
                 } else if block.photoItems.isEmpty {
                     if let text = block.textItem?.textContent {
