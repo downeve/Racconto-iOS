@@ -12,11 +12,8 @@ struct ExploreView: View {
     /// 진입 username을 외부에서 받고, 카드 탭 시 set → NavigationLink로 PublicPortfolioView 진입.
     @State private var selectedUsername: String? = nil
 
-    private var portfolioBg: Color {
-        colorScheme == .dark
-            ? Color(.systemBackground)
-            : Color(red: 0.957, green: 0.937, blue: 0.906)
-    }
+    // PART D-1: Asset Catalog rcCanvas — Light/Dark Appearance 자동 전환.
+    private var portfolioBg: Color { .rcCanvas }
 
     var body: some View {
         ScrollView {

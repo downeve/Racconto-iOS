@@ -19,12 +19,8 @@ struct PublicPortfolioView: View {
         self.presetUsername = presetUsername
     }
 
-    // 웹 bg-canvas(크림) / bg-d-bg(다크) 와 동일한 시스템 연동 배경색
-    private var portfolioBg: Color {
-        colorScheme == .dark
-            ? Color(.systemBackground)
-            : Color(red: 0.957, green: 0.937, blue: 0.906)
-    }
+    // PART D-1: Asset Catalog rcCanvas — 시스템 ColorScheme + Dark Appearance로 자동 전환.
+    private var portfolioBg: Color { .rcCanvas }
 
     var body: some View {
         content

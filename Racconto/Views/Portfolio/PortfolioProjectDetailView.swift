@@ -51,11 +51,8 @@ struct PortfolioProjectDetailView: View {
         return photos
     }
 
-    private var portfolioBg: Color {
-        colorScheme == .dark
-            ? Color(.systemBackground)
-            : Color(red: 0.957, green: 0.937, blue: 0.906)
-    }
+    // PART D-1: Asset Catalog rcCanvas — Light/Dark Appearance 자동 전환.
+    private var portfolioBg: Color { .rcCanvas }
 
     private var activeChapter: PortfolioChapter? {
         project.chapters.indices.contains(activeChapterIndex)
@@ -208,7 +205,7 @@ struct PortfolioProjectDetailView: View {
                     Text(String(format: "%02d", number))
                         .font(.custom("Georgia", size: 52))
                         .fontWeight(.light)
-                        .foregroundStyle(Color(red: 0.659, green: 0.263, blue: 0.122))
+                        .foregroundStyle(Color.rcAccent)
                         .lineLimit(1)
                     Rectangle()
                         .fill(Color(.separator))
@@ -262,7 +259,7 @@ struct PortfolioProjectDetailView: View {
                         .fill(Color.secondary.opacity(0.2))
                         .frame(height: 3)
                     Capsule()
-                        .fill(Color(red: 0.659, green: 0.263, blue: 0.122))
+                        .fill(Color.rcAccent)
                         .frame(width: max(0, geo.size.width * progress), height: 3)
                 }
             }

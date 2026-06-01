@@ -175,7 +175,7 @@ struct LightboxView: View {
                             .overlay(
                                 Rectangle()
                                     .strokeBorder(
-                                        Color(red: 0.659, green: 0.263, blue: 0.122),
+                                        Color.rcAccent,
                                         lineWidth: i == currentIndex ? 2 : 0
                                     )
                             )
@@ -220,7 +220,7 @@ struct LightboxView: View {
                 Spacer()
             }
             HStack(spacing: 16) {
-                ForEach(["red", "yellow", "green", "blue", "purple"], id: \.self) { label in
+                ForEach(PhotoLabel.allCases) { label in
                     colorLabelButton(photo: photo, label: label)
                 }
                 Spacer()
@@ -302,18 +302,18 @@ struct LightboxView: View {
         .background(.ultraThinMaterial)
     }
 
-    private func colorLabelButton(photo: Photo, label: String) -> some View {
-        let colorMap: [String: Color] = [
-            "red": .red, "yellow": .yellow, "green": .green, "blue": .blue, "purple": .purple
-        ]
+    private func colorLabelButton(photo: Photo, label: PhotoLabel) -> some View {
+        let key = label.rawValue
+        let isActive = photo.colorLabel == key
         return Button {
-            Task { await viewModel?.updateColorLabel(photoId: photo.id, label: photo.colorLabel == label ? nil : label) }
+            Task { await viewModel?.updateColorLabel(photoId: photo.id, label: isActive ? nil : key) }
         } label: {
             Circle()
-                .fill(colorMap[label] ?? .gray)
+                .fill(label.color)
                 .frame(width: 20, height: 20)
-                .overlay(Circle().stroke(Color.white, lineWidth: photo.colorLabel == label ? 2 : 0).padding(-2))
+                .overlay(Circle().stroke(Color.white, lineWidth: isActive ? 2 : 0).padding(-2))
         }
+        .accessibilityLabel(Text("\(label.defaultName) 라벨"))
     }
 }
 
