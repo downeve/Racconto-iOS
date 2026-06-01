@@ -11,6 +11,8 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                // 명시적 페이지 배경 — sheet 환경에서 시스템 배경 누설 방지
+                Color.clear.frame(height: 0)
                 VStack(spacing: 32) {
                     Spacer().frame(height: 40)
 
@@ -27,20 +29,20 @@ struct LoginView: View {
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
                             .padding()
-                            .background(Color(.secondarySystemBackground))
+                            .background(Color.rcSurface)
                             .cornerRadius(Radius.large)
 
                         SecureField("비밀번호", text: $password)
                             .textContentType(.password)
                             .padding()
-                            .background(Color(.secondarySystemBackground))
+                            .background(Color.rcSurface)
                             .cornerRadius(Radius.large)
                     }
 
                     if let error = authViewModel.errorMessage {
                         Text(error)
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.rcDanger)
                             .multilineTextAlignment(.center)
                     }
 
@@ -57,8 +59,8 @@ struct LoginView: View {
                                 .padding()
                         }
                     }
-                    .background(Color.primary)
-                    .foregroundStyle(Color(UIColor.systemBackground))
+                    .background(Color.rcInk)
+                    .foregroundStyle(Color.rcCanvas)
                     .cornerRadius(Radius.large)
                     .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
 
@@ -66,16 +68,16 @@ struct LoginView: View {
                         showRegister = true
                     }
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.rcMuted)
 
                     // 구분선
                     HStack {
-                        Rectangle().fill(Color(.separator)).frame(height: 1)
+                        Rectangle().fill(Color.rcLine).frame(height: 1)
                         Text("또는")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.rcMuted)
                             .padding(.horizontal, 8)
-                        Rectangle().fill(Color(.separator)).frame(height: 1)
+                        Rectangle().fill(Color.rcLine).frame(height: 1)
                     }
 
                     // 소셜 로그인
@@ -106,14 +108,14 @@ struct LoginView: View {
                                 Text("Google로 로그인")
                                     .font(.body)
                                     .fontWeight(.medium)
-                                    .foregroundStyle(.primary)
+                                    .foregroundStyle(Color.rcInk)
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
-                            .background(Color(.systemBackground))
+                            .background(Color.rcCanvas)
                             .overlay(
                                 RoundedRectangle(cornerRadius: Radius.large)
-                                    .stroke(Color(.separator), lineWidth: 1)
+                                    .stroke(Color.rcLine, lineWidth: 1)
                             )
                             .cornerRadius(Radius.large)
                         }
@@ -162,6 +164,8 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 32)
             }
+            .background(Color.rcCanvas)
+            .scrollContentBackground(.hidden)
             .sheet(isPresented: $showRegister) {
                 RegisterView(authViewModel: authViewModel)
             }

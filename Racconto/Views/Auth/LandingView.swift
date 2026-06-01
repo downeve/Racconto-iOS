@@ -46,13 +46,13 @@ struct LandingView: View {
 
     private var heroPage: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.rcCanvas.ignoresSafeArea()
 
             // 배경 격자 장식
             GeometryReader { geo in
                 Canvas { context, size in
                     let spacing: CGFloat = 56
-                    let color = Color.primary.opacity(0.04)
+                    let color = Color.rcLine.opacity(0.5)
                     var x: CGFloat = 0
                     while x <= size.width {
                         var path = Path()
@@ -80,30 +80,33 @@ struct LandingView: View {
                     Text("스마트폰부터 필름까지, 모든 사진가를 위해")
                         .font(.caption)
                         .tracking(2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.rcMuted)
                         .multilineTextAlignment(.center)
 
                     VStack(spacing: 4) {
                         Text("당신의 사진이")
                             .font(.custom("Georgia", size: 40))
                             .fontWeight(.bold)
+                            .foregroundStyle(Color.rcInk)
                         Text("이야기가 됩니다")
                             .font(.custom("Georgia", size: 40))
                             .fontWeight(.bold)
+                            .foregroundStyle(Color.rcInk)
                     }
                     .multilineTextAlignment(.center)
 
                     Text("프레임 속 시간을 이어 스토리를 만드세요.")
                         .font(.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.rcMuted)
                         .multilineTextAlignment(.center)
 
                     Text("무료 오픈 베타")
                         .font(.caption2)
                         .tracking(1.5)
+                        .foregroundStyle(Color.rcAccent)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
-                        .background(Color.primary.opacity(0.08))
+                        .background(Color.rcAccent.opacity(0.12))
                         .cornerRadius(20)
                 }
                 .padding(.horizontal, 40)
@@ -118,7 +121,7 @@ struct LandingView: View {
 
     private func featurePage(number: String, title: String, desc: String, visual: some View) -> some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.rcCanvas.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 visual
@@ -130,15 +133,16 @@ struct LandingView: View {
                     Text(number)
                         .font(.system(.caption, design: .monospaced))
                         .tracking(3)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.rcFaint)
 
                     Text(title)
                         .font(.title2)
                         .fontWeight(.semibold)
+                        .foregroundStyle(Color.rcInk)
 
                     Text(desc)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.rcMuted)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -153,46 +157,47 @@ struct LandingView: View {
 
     private var storyVisual: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(LinearGradient(
-                    colors: [Color(red: 0.35, green: 0.3, blue: 0.85), Color(red: 0.55, green: 0.25, blue: 0.75)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.rcSurface)
                 .frame(height: 220)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.rcLine, lineWidth: 1)
+                )
 
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Image(systemName: "book.pages.fill")
                             .font(.system(size: 40))
-                            .foregroundStyle(.white.opacity(0.95))
+                            .foregroundStyle(Color.rcAccent)
                         Text("챕터 1. 도입")
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(Color.rcInk)
                         Text("챕터 2. 전개")
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(Color.rcInk2)
                         Text("챕터 3. 결말")
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.35))
+                            .foregroundStyle(Color.rcMuted)
                     }
                 }
                 .frame(maxWidth: .infinity)
 
                 Rectangle()
-                    .fill(.white.opacity(0.15))
+                    .fill(Color.rcLine)
                     .frame(width: 1)
                     .padding(.vertical, 24)
 
                 VStack(spacing: 12) {
                     Image(systemName: "person.crop.rectangle.stack.fill")
                         .font(.system(size: 38))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(Color.rcAccent)
                     Text("포트폴리오")
                         .font(.caption2)
                         .tracking(1)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(Color.rcMuted)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -201,24 +206,30 @@ struct LandingView: View {
     }
 
     private var photosVisual: some View {
+        // 02 카드는 명도 리듬을 위해 surface가 아닌 canvas(한 단계 어두움) 배경
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(LinearGradient(
-                    colors: [Color(red: 0.95, green: 0.5, blue: 0.15), Color(red: 0.98, green: 0.72, blue: 0.2)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.rcCanvas)
                 .frame(height: 220)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.rcLine, lineWidth: 1)
+                )
 
             VStack(spacing: 18) {
                 HStack(spacing: 10) {
                     ForEach(0..<4) { i in
                         RoundedRectangle(cornerRadius: Radius.panel)
-                            .fill(.white.opacity(i == 0 ? 0.9 : 0.4 - Double(i) * 0.08))
+                            .fill(i == 0 ? Color.rcSurface : Color.rcCanvas)
                             .frame(width: 52, height: 52)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.panel)
+                                    .stroke(Color.rcLine, lineWidth: 1)
+                            )
                             .overlay(
                                 Image(systemName: "photo.fill")
                                     .font(.system(size: 18))
-                                    .foregroundStyle(.white.opacity(0.6))
+                                    .foregroundStyle(Color.rcFaint)
                             )
                     }
                 }
@@ -228,16 +239,14 @@ struct LandingView: View {
                         ForEach(1...5, id: \.self) { n in
                             Image(systemName: n <= 4 ? "star.fill" : "star")
                                 .font(.system(size: 14))
-                                .foregroundStyle(.white.opacity(n <= 4 ? 0.9 : 0.4))
+                                .foregroundStyle(n <= 4 ? Color.rcAccent : Color.rcFaint)
                         }
                     }
                     Spacer()
                     HStack(spacing: 5) {
-                        ForEach(["red", "orange", "yellow"], id: \.self) { _ in
-                            Circle()
-                                .fill(.white.opacity(0.7))
-                                .frame(width: 12, height: 12)
-                        }
+                        Circle().fill(Color.rcLabelRed).frame(width: 12, height: 12)
+                        Circle().fill(Color.rcLabelYellow).frame(width: 12, height: 12)
+                        Circle().fill(Color.rcLabelGreen).frame(width: 12, height: 12)
                     }
                 }
                 .padding(.horizontal, 28)
@@ -247,29 +256,30 @@ struct LandingView: View {
 
     private var notesVisual: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(LinearGradient(
-                    colors: [Color(red: 0.1, green: 0.6, blue: 0.55), Color(red: 0.15, green: 0.75, blue: 0.6)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.rcSurface)
                 .frame(height: 220)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.rcLine, lineWidth: 1)
+                )
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: "note.text")
                         .font(.system(size: 28))
-                        .foregroundStyle(.white.opacity(0.95))
+                        .foregroundStyle(Color.rcAccent)
                     Spacer()
                     Image(systemName: "pin.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(Color.rcMuted)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    mdLine("# 프로젝트 컨셉", opacity: 0.95)
-                    mdLine("**주제:** 도시의 빛과 그림자", opacity: 0.8)
-                    mdLine("*촬영 아이디어를 기록하세요*", opacity: 0.65)
-                    mdLine("- 새벽 5시, 골목 끝 빛줄기", opacity: 0.55)
+                    mdLine("# 프로젝트 컨셉", color: .rcInk, weight: .bold)
+                    mdLine("**주제:** 도시의 빛과 그림자", color: .rcInk2, weight: .semibold)
+                    mdLine("*촬영 아이디어를 기록하세요*", color: .rcMuted, weight: .regular, italic: true)
+                    mdLine("- 새벽 5시, 골목 끝 빛줄기", color: .rcFaint, weight: .regular)
                 }
             }
             .padding(.horizontal, 28)
@@ -277,10 +287,12 @@ struct LandingView: View {
         }
     }
 
-    private func mdLine(_ text: String, opacity: Double) -> some View {
+    @ViewBuilder
+    private func mdLine(_ text: String, color: Color, weight: Font.Weight, italic: Bool = false) -> some View {
+        let baseFont = Font.system(.caption, design: .monospaced).weight(weight)
         Text(text)
-            .font(.system(.caption, design: .monospaced))
-            .foregroundStyle(.white.opacity(opacity))
+            .font(italic ? baseFont.italic() : baseFont)
+            .foregroundStyle(color)
     }
 
     // MARK: - Bottom Overlay
@@ -291,7 +303,7 @@ struct LandingView: View {
             HStack(spacing: 6) {
                 ForEach(0..<pageCount, id: \.self) { i in
                     Capsule()
-                        .fill(i == currentPage ? Color.primary : Color.primary.opacity(0.2))
+                        .fill(i == currentPage ? Color.rcAccent : Color.rcLine)
                         .frame(width: i == currentPage ? 20 : 6, height: 6)
                         .animation(.easeInOut(duration: 0.25), value: currentPage)
                 }
@@ -307,8 +319,8 @@ struct LandingView: View {
                     .tracking(0.5)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color.primary)
-                    .foregroundStyle(Color(UIColor.systemBackground))
+                    .background(Color.rcInk)
+                    .foregroundStyle(Color.rcCanvas)
                     .cornerRadius(Radius.large)
             }
 
@@ -317,7 +329,7 @@ struct LandingView: View {
             } label: {
                 Text("이미 계정이 있으신가요? 로그인")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.rcMuted)
             }
         }
         .padding(.horizontal, 32)
@@ -325,7 +337,7 @@ struct LandingView: View {
         .padding(.bottom, 48)
         .background(
             LinearGradient(
-                colors: [Color(.systemBackground).opacity(0), Color(.systemBackground)],
+                colors: [Color.rcCanvas.opacity(0), Color.rcCanvas],
                 startPoint: .top,
                 endPoint: UnitPoint(x: 0.5, y: 0.35)
             )

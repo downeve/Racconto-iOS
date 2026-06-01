@@ -11,7 +11,7 @@ import SwiftUI
 ///   F7(다크에서 accent 증발)이 구조적으로 발생하지 않는다.
 extension Color {
     // MARK: Surfaces / Lines
-    /// 페이지 배경. 웹 `canvas` (#F4EFE7) / `d-bg` (#16100C).
+    /// 페이지 배경. Gallery Neutral `canvas` (#E9E7E2) / dark (#161514).
     static let rcCanvas  = Color("rcCanvas")
     /// 카드·시트 배경. 웹 `card` / `d-surface`.
     static let rcSurface = Color("rcSurface")
