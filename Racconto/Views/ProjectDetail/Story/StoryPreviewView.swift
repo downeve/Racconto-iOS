@@ -108,7 +108,8 @@ struct StoryPreviewView: View {
                 }
             }
         } else {
-            let cols = block.blockLayout == .wide ? 2 : 4
+            // 웹 PortfolioChapterItems와 동일: wide 2열 / grid 3열
+            let cols = block.blockLayout == .wide ? 2 : 3
             JustifiedPhotoGrid(
                 items: photos,
                 cols: cols,
