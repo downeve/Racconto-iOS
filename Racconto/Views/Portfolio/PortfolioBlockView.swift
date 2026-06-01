@@ -111,7 +111,7 @@ struct PortfolioBlockView: View {
             ForEach(Array(photos.enumerated()), id: \.element.id) { idx, item in
                 VStack(alignment: .leading, spacing: 6) {
                     SingleFitPhoto(url: item.imageUrl, initialRatio: item.aspectRatio)
-                        .cornerRadius(2)
+                        .cornerRadius(Radius.btn)
                         .onTapGesture { openLightbox(block: block, index: idx) }
                     if let cap = item.caption, !cap.isEmpty {
                         Text(cap)
@@ -153,7 +153,7 @@ struct PortfolioBlockView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
                     .clipped()
-                    .cornerRadius(4)
+                    .cornerRadius(Radius.cell)
                     .onTapGesture { openLightbox(block: block, index: idx) }
             }
         }
@@ -177,7 +177,7 @@ struct PortfolioBlockView: View {
         VStack(spacing: 4) {
             ForEach(Array(block.photoItems.enumerated()), id: \.element.id) { idx, item in
                 SingleFitPhoto(url: item.imageUrl, initialRatio: item.aspectRatio)
-                    .cornerRadius(2)
+                    .cornerRadius(Radius.btn)
                     .onTapGesture { openLightbox(block: block, index: idx) }
             }
         }
@@ -299,7 +299,7 @@ private struct PortfolioJustifiedPhotoGrid: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: rowHeight * rowRatios[i], height: rowHeight)
                     .clipped()
-                    .cornerRadius(2)
+                    .cornerRadius(Radius.btn)
                     .onTapGesture { onTap(entry.index) }
             }
         }

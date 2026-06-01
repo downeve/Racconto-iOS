@@ -212,7 +212,7 @@ struct LandingView: View {
             VStack(spacing: 18) {
                 HStack(spacing: 10) {
                     ForEach(0..<4) { i in
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: Radius.panel)
                             .fill(.white.opacity(i == 0 ? 0.9 : 0.4 - Double(i) * 0.08))
                             .frame(width: 52, height: 52)
                             .overlay(
@@ -309,7 +309,7 @@ struct LandingView: View {
                     .padding(.vertical, 14)
                     .background(Color.primary)
                     .foregroundStyle(Color(UIColor.systemBackground))
-                    .cornerRadius(8)
+                    .cornerRadius(Radius.large)
             }
 
             Button {

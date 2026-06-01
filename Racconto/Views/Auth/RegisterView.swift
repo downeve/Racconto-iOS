@@ -34,7 +34,7 @@ struct RegisterView: View {
                             .textContentType(.name)
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
 
                         TextField("이메일", text: $email)
                             .textContentType(.emailAddress)
@@ -43,13 +43,13 @@ struct RegisterView: View {
                             .textInputAutocapitalization(.never)
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
 
                         SecureField("비밀번호", text: $password)
                             .textContentType(.newPassword)
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
                     }
 
                     if let error = authViewModel.errorMessage {
@@ -83,7 +83,7 @@ struct RegisterView: View {
                     }
                     .background(Color.primary)
                     .foregroundStyle(Color(UIColor.systemBackground))
-                    .cornerRadius(8)
+                    .cornerRadius(Radius.large)
                     .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
                 }
             }

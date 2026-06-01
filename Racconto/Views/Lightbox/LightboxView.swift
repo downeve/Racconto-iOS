@@ -384,7 +384,7 @@ struct EXIFPanel: View {
         }
         .padding(12)
         .background(.ultraThinMaterial)
-        .cornerRadius(8)
+        .cornerRadius(Radius.large)
         .padding(.horizontal)
     }
 

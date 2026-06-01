@@ -209,7 +209,7 @@ struct PublicPortfolioView: View {
                     }
                 }
                 .clipped()
-                .cornerRadius(2)
+                .cornerRadius(Radius.btn)
 
             Text(project.title)
                 .font(.custom("Georgia", size: 18))

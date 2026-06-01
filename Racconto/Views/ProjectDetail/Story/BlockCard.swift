@@ -334,7 +334,7 @@ struct StackedSideBySideBlock: View {
             .padding(.vertical, 3)
             .background(.ultraThinMaterial)
             .background(Color.black.opacity(0.55))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.cell))
             .padding(8)
         }
         .frame(maxWidth: .infinity)

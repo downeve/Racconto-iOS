@@ -43,9 +43,17 @@ enum RType {
 
 /// 모서리 반경 상수 (PART D-3 F6).
 ///
-/// 사진은 0 (각진 프린트 무드), 버튼 2, 카드 3. raw cornerRadius 사용 금지 — 이 enum 참조.
+/// 사진은 0 (각진 프린트 무드), 버튼 2, 카드 3.
+/// `large`(8)는 노트 카드처럼 시각적으로 더 둥근 카드용 — README spec 보강.
+/// raw `cornerRadius`/`RoundedRectangle(cornerRadius:)` 사용 금지 — 이 enum 참조.
 enum Radius {
     static let photo: CGFloat = 0
     static let btn:   CGFloat = 2
     static let card:  CGFloat = 3
+    /// 4pt — 사진 grid 셀, 작은 thumbnail.
+    static let cell:  CGFloat = 4
+    /// 6pt — side-by-side 텍스트 박스 등.
+    static let panel: CGFloat = 6
+    /// 8pt — 노트 카드·EXIF 패널·composer 등 시각적으로 더 둥근 카드.
+    static let large: CGFloat = 8
 }

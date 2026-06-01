@@ -7,8 +7,8 @@ struct ProjectCard: View {
         HStack(spacing: 12) {
             CachedImage(url: project.coverImageUrl, variant: .thumb, contentMode: .fill)
                 .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .background(Color(.tertiarySystemBackground).clipShape(RoundedRectangle(cornerRadius: 6)))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.panel))
+                .background(Color(.tertiarySystemBackground).clipShape(RoundedRectangle(cornerRadius: Radius.panel)))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(project.title)
@@ -43,7 +43,7 @@ struct ProjectGridCard: View {
                     // cover variant: CF Dashboard에 정의된 프로젝트 커버 전용 crop
                     CachedImage(url: project.coverImageUrl, variant: .cover, contentMode: .fill)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.large))
 
             VStack(alignment: .leading, spacing: 3) {
                 ZStack(alignment: .topLeading) {
@@ -76,35 +76,7 @@ struct ProjectGridCard: View {
     }
 }
 
-struct StatusBadge: View {
-    let status: Project.ProjectStatus
-
-    var body: some View {
-        Text(label)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.15))
-            .foregroundStyle(color)
-            .clipShape(Capsule())
-    }
-
-    private var label: String {
-        switch status {
-        case .inProgress: return "진행 중"
-        case .completed:  return "완료"
-        case .published:  return "게시됨"
-        case .archived:   return "보관됨"
-        }
-    }
-
-    private var color: Color {
-        switch status {
-        case .inProgress: return .purple
-        case .completed:  return .green
-        case .published:  return .blue
-        case .archived:   return .gray
-        }
-    }
-}
+// StatusBadge 정의는 DesignSystem/StatusBadge.swift 단일 출처.
+// 이전에 inline `.purple/.green/.blue/.gray` raw 색 버전이 여기 있었으나,
+// PART D-3 옵션 C 단일 컴포넌트화로 제거. 위의 ProjectCard/ProjectGridCard가
+// 그 컴포넌트를 그대로 사용한다.

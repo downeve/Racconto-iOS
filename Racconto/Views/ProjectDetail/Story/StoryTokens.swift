@@ -1,33 +1,37 @@
 import SwiftUI
 
 // MARK: - Color Tokens
+//
+// PART D-1 흡수: 모든 색 토큰을 rc* (Color+Racconto.swift) 로 위임.
+// 기존 Story* Color Set은 호환을 위해 Asset Catalog에 남겨두지만, 신규 코드는
+// 직접 `Color.rc*` 사용 권장. 본 enum은 기존 사용처와의 마이그레이션 브리지.
 
 enum StoryTokens {
-    // Surfaces — 따뜻한 페이퍼 톤. 다크모드에선 잉크 톤으로 반전.
-    static let paper      = Color("StoryPaper")       // #FBFAF7 / dark: #1A1814
-    static let paper2     = Color("StoryPaper2")      // #F4F2EC / dark: #232019
-    static let paper3     = Color("StoryPaper3")      // #ECEAE2 / dark: #2C2823
+    // Surfaces
+    static let paper      = Color.rcCanvas    // (구) StoryPaper #FBFAF7
+    static let paper2     = Color.rcCanvas    // (구) StoryPaper2 — 동일 톤으로 흡수
+    static let paper3     = Color.rcLine      // (구) StoryPaper3 — 더 어두운 면 → line으로
 
     // Ink
-    static let ink        = Color("StoryInk")         // #1F1B16 / dark: #F5F1E8
-    static let inkSoft    = Color("StoryInkSoft")     // #3A342B / dark: #D8D0BE
-    static let muted      = Color("StoryMuted")       // #7B7468
-    static let faint      = Color("StoryFaint")       // #B8B1A4
+    static let ink        = Color.rcInk
+    static let inkSoft    = Color.rcInk2
+    static let muted      = Color.rcMuted     // 웹 AA 보정값(P0-1) 반영
+    static let faint      = Color.rcFaint
 
     // Lines
-    static let line       = Color("StoryLine")        // #E2DED4 / dark: #3A342B
-    static let lineStrong = Color("StoryLineStrong")  // #C9C3B4 / dark: #4A4239
+    static let line       = Color.rcLine
+    static let lineStrong = Color.rcMuted     // 더 진한 hairline — muted opacity로 표현해도 됨
 
-    // Accents
-    static let accent     = Color("StoryAccent")      // #A8431F (muted brick)
-    static let danger     = Color("StoryDanger")      // #B0322B
+    // Accents — README 옵션 A: brick 폐기, warm tan으로 단일화
+    static let accent     = Color.rcAccent    // (구) StoryAccent brick #A8431F → warm tan #885531
+    static let danger     = Color.rcDanger
 
     // Spacing
     static let blockGap: CGFloat   = 12    // ChapterStackView spacing 과 일치
     static let blockPadH: CGFloat  = 14
     static let blockPadV: CGFloat  = 10
     static let photoGap: CGFloat   = 4
-    static let photoRadius: CGFloat = 2
+    static let photoRadius: CGFloat = Radius.btn
 }
 
 // MARK: - Markdown Preprocessing

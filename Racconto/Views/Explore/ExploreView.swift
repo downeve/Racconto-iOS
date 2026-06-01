@@ -101,7 +101,7 @@ struct ExploreView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: Radius.btn)
                 .stroke(Color(.separator), lineWidth: 1)
         )
         .frame(maxWidth: sizeClass == .regular ? 360 : .infinity, alignment: .leading)
@@ -134,7 +134,7 @@ struct ExploreView: View {
                 .background(active ? Color.primary : Color.clear)
                 .foregroundStyle(active ? Color(UIColor.systemBackground) : Color.secondary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 2)
+                    RoundedRectangle(cornerRadius: Radius.btn)
                         .stroke(active ? Color.primary : Color(.separator), lineWidth: 1)
                 )
         }

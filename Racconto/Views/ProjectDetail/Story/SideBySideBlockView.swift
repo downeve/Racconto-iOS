@@ -86,7 +86,7 @@ struct SideBySideBlockView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 160)
                     .clipped()
-                    .cornerRadius(6)
+                    .cornerRadius(Radius.panel)
             }
         }
         .frame(maxWidth: .infinity)
@@ -105,7 +105,7 @@ struct SideBySideBlockView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(6)
+        .cornerRadius(Radius.panel)
         .contentShape(Rectangle())
         .onTapGesture { showTextEditor = true }
     }

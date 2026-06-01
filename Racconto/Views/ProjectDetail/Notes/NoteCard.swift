@@ -36,7 +36,7 @@ struct NoteCard: View {
                     .padding(.vertical, 3)
                     .background(info.color)
                     .foregroundStyle(info.dotColor)
-                    .cornerRadius(4)
+                    .cornerRadius(Radius.cell)
 
                 if note.isPinned {
                     Image(systemName: "pin.fill")
@@ -60,7 +60,7 @@ struct NoteCard: View {
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(8)
+        .cornerRadius(Radius.large)
         .contentShape(Rectangle())
         .onTapGesture { showEditor = true }
         .contextMenu {
@@ -115,9 +115,9 @@ struct NoteEditorView: View {
                                         .padding(.vertical, 5)
                                         .background(selectedType == type.value ? type.color : Color(.tertiarySystemBackground))
                                         .foregroundStyle(selectedType == type.value ? type.dotColor : Color.secondary)
-                                        .cornerRadius(6)
+                                        .cornerRadius(Radius.panel)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
+                                            RoundedRectangle(cornerRadius: Radius.panel)
                                                 .stroke(selectedType == type.value ? type.dotColor.opacity(0.4) : Color.clear, lineWidth: 1)
                                         )
                                 }

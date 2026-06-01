@@ -28,13 +28,13 @@ struct LoginView: View {
                             .textInputAutocapitalization(.never)
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
 
                         SecureField("비밀번호", text: $password)
                             .textContentType(.password)
                             .padding()
                             .background(Color(.secondarySystemBackground))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
                     }
 
                     if let error = authViewModel.errorMessage {
@@ -59,7 +59,7 @@ struct LoginView: View {
                     }
                     .background(Color.primary)
                     .foregroundStyle(Color(UIColor.systemBackground))
-                    .cornerRadius(8)
+                    .cornerRadius(Radius.large)
                     .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
 
                     Button("계정이 없으신가요? 회원가입") {
@@ -94,7 +94,7 @@ struct LoginView: View {
                         }
                         .signInWithAppleButtonStyle(.black)
                         .frame(height: 50)
-                        .cornerRadius(8)
+                        .cornerRadius(Radius.large)
 
                         // Google
                         Button {
@@ -112,10 +112,10 @@ struct LoginView: View {
                             .frame(height: 50)
                             .background(Color(.systemBackground))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: Radius.large)
                                     .stroke(Color(.separator), lineWidth: 1)
                             )
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
                         }
                         .disabled(authViewModel.isLoading)
 
@@ -134,7 +134,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                             .background(Color(red: 0.01, green: 0.78, blue: 0.35))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
                         }
                         .disabled(authViewModel.isLoading)
 
@@ -153,7 +153,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                             .background(Color(red: 0.024, green: 0.780, blue: 0.333))
-                            .cornerRadius(8)
+                            .cornerRadius(Radius.large)
                         }
                         .disabled(authViewModel.isLoading)
                     }

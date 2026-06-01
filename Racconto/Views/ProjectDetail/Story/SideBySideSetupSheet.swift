@@ -101,7 +101,7 @@ struct SideBySideSetupSheet: View {
                 CachedImage(url: url, variant: .thumb, contentMode: .fill)
                     .frame(width: 44, height: 44)
                     .clipped()
-                    .cornerRadius(4)
+                    .cornerRadius(Radius.cell)
                 Text("사진 \(candidate.photoItems.count)장")
                     .font(.subheadline)
             }

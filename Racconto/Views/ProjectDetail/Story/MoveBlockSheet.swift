@@ -44,7 +44,7 @@ struct MoveBlockSheet: View {
                             CachedImage(url: block.firstImageUrl, variant: .thumb, contentMode: .fill)
                                 .aspectRatio(1, contentMode: .fill)
                                 .clipped()
-                                .cornerRadius(6)
+                                .cornerRadius(Radius.panel)
                         }
                     }
 
@@ -70,7 +70,7 @@ struct MoveBlockSheet: View {
                             .foregroundStyle(.secondary)
                         }
                         .aspectRatio(1, contentMode: .fill)
-                        .cornerRadius(6)
+                        .cornerRadius(Radius.panel)
                     }
                 }
                 .padding()

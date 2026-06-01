@@ -101,7 +101,7 @@ struct StoryPreviewView: View {
                 ForEach(photos) { item in
                     // 풀너비 사진 — iPhone lightboxmobile(1600) / iPad lightbox(2048)
                     CachedImage(url: item.imageUrl, variant: lightboxVariant(for: sizeClass), contentMode: .fit)
-                        .cornerRadius(2)
+                        .cornerRadius(Radius.btn)
                         .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
                 }
             }
@@ -141,7 +141,7 @@ struct StoryPreviewView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
                     .clipped()
-                    .cornerRadius(4)
+                    .cornerRadius(Radius.cell)
                     .onTapGesture { openLightbox(for: item, allPhotos: allPhotos) }
             }
         }
@@ -226,7 +226,7 @@ private struct JustifiedPhotoGrid: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: rowHeight * ratio, height: rowHeight)
                     .clipped()
-                    .cornerRadius(2)
+                    .cornerRadius(Radius.btn)
                     .onTapGesture { onTap(item) }
             }
         }

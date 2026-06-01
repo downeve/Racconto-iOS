@@ -144,7 +144,7 @@ struct NotesTabView: View {
             .padding(.vertical, 5)
             .background(isActive ? Color(.label).opacity(0.12) : Color(.tertiarySystemBackground))
             .foregroundStyle(isActive ? Color(.label) : Color.secondary)
-            .cornerRadius(6)
+            .cornerRadius(Radius.panel)
         }
         .buttonStyle(.plain)
     }
@@ -247,7 +247,7 @@ struct NotesTabView: View {
                             .padding(.vertical, 4)
                             .background(newNoteType == type.value ? type.color : Color(.tertiarySystemBackground))
                             .foregroundStyle(newNoteType == type.value ? type.dotColor : Color.secondary)
-                            .cornerRadius(5)
+                            .cornerRadius(Radius.cell)
                     }
                     .buttonStyle(.plain)
                 }
@@ -286,7 +286,7 @@ struct NotesTabView: View {
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(8)
+        .cornerRadius(Radius.large)
     }
 
     // MARK: - 빈 상태 입력창
@@ -321,7 +321,7 @@ struct NotesTabView: View {
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(8)
+        .cornerRadius(Radius.large)
     }
 
     // MARK: - 노트 행
