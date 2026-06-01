@@ -96,7 +96,9 @@ struct StoryPreviewView: View {
     @ViewBuilder
     private func photoBlockView(_ block: Block, allPhotos: [Photo]) -> some View {
         let photos = block.photoItems
-        if block.blockLayout == .single {
+        // iPhone: 웹 MobilePortfolioChapterItems와 동일하게 GRID/WIDE/SINGLE 모두 1열 풀폭.
+        // iPad: blockLayout에 따라 single 풀폭 또는 JustifiedPhotoGrid.
+        if sizeClass != .regular || block.blockLayout == .single {
             VStack(spacing: 4) {
                 ForEach(photos) { item in
                     // 풀너비 사진 — iPhone lightboxmobile(1600) / iPad lightbox(2048)
@@ -106,7 +108,7 @@ struct StoryPreviewView: View {
                 }
             }
         } else {
-            let cols = block.blockLayout == .wide ? 2 : (sizeClass == .regular ? 4 : 3)
+            let cols = block.blockLayout == .wide ? 2 : 4
             JustifiedPhotoGrid(
                 items: photos,
                 cols: cols,
